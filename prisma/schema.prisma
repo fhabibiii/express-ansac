@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  username    String    @unique @db.VarChar(255)
+  name        String?   @db.VarChar(255)
+  email       String    @unique @db.VarChar(255)
+  password    String?   @db.VarChar(255)
+  phoneNumber String    @unique @db.VarChar(15)
+  dateOfBirth DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  testResults TestResult[]
+}
+
+model Admin {
+  id          Int       @id @default(autoincrement())
+  username    String    @unique @db.VarChar(255)
+  name        String    @db.VarChar(255)
+  password    String    @db.VarChar(255)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tests       Test[]
+}
+
+model Superadmin {
+  id          Int       @id @default(autoincrement())
+  username    String    @unique @db.VarChar(255)
+  name        String    @db.VarChar(255)
+  password    String    @db.VarChar(255)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Test {
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(255)
+  shortDesc   String    @db.Text
+  longDesc    String    @db.Text
+  minAge      Int
+  maxAge      Int
+  status      TestStatus @default(PENDING)
+  createdBy   Int
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  admin       Admin      @relation(fields: [createdBy], references: [id])
+  options     Option[]
+  scores      Score[]
+  questions   Question[]
+  testResults TestResult[]
+  valueRanges ValueRange[]
+}
+
+model Option {
+  id              Int              @id @default(autoincrement())
+  label           String           @db.VarChar(255)
+  testId          Int
+  test            Test             @relation(fields: [testId], references: [id])
+  questionOptions QuestionOption[] 
+}
+
+model ValueRange {
+  id              Int              @id @default(autoincrement())
+  testId          Int
+  minValue        Int
+  maxValue        Int
+  test            Test             @relation(fields: [testId], references: [id])
+  questionOptions QuestionOption[]
+}
+
+model Score {
+  id         Int        @id @default(autoincrement())
+  name       String     @db.VarChar(255)
+  testId     Int
+  test       Test       @relation(fields: [testId], references: [id])
+  categories Category[]
+}
+
+model Category {
+  id            Int        @id @default(autoincrement())
+  name          String     @db.VarChar(255)
+  scoreId       Int
+  score         Score      @relation(fields: [scoreId], references: [id])
+  questions     Question[]
+  ranges        CategoryRange[]
+  maxQuestions  Int
+}
+
+model CategoryRange {
+  id          Int        @id @default(autoincrement())
+  categoryId  Int
+  minValue    Int
+  maxValue    Int
+  label       String     @db.VarChar(255)
+  desc        String     @db.Text
+  category    Category   @relation(fields: [categoryId], references: [id])
+}
+
+model Question {
+  id            Int        @id @default(autoincrement())
+  text          String     @db.Text
+  categoryId    Int
+  category      Category   @relation(fields: [categoryId], references: [id])
+  testId        Int
+  test          Test       @relation(fields: [testId], references: [id])
+  optionScores  QuestionOption[]
+}
+
+model QuestionOption {
+  id          Int     @id @default(autoincrement())
+  questionId  Int
+  optionId    Int
+  valueRangeId Int
+  value       Int
+  question    Question @relation(fields: [questionId], references: [id])
+  option      Option   @relation(fields: [optionId], references: [id])
+  valueRange  ValueRange @relation(fields: [valueRangeId], references: [id])
+}
+
+model TestResult {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  testId          Int
+  categoryScores  Json
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id])
+  test            Test     @relation(fields: [testId], references: [id])
+}
+
+enum TestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
