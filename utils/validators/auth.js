@@ -33,6 +33,12 @@ const validateRegister = [
             }
             return true;
         }),
+    body('role').custom((value) => {
+        if (value) {
+            throw new Error('User does not have access to choose role');
+        }
+        return true;
+    }),
 ];
 
 const validateLogin = [

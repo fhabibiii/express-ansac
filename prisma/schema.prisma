@@ -12,31 +12,13 @@ model User {
   username    String    @unique @db.VarChar(255)
   name        String?   @db.VarChar(255)
   email       String    @unique @db.VarChar(255)
-  password    String?   @db.VarChar(255)
-  phoneNumber String    @unique @db.VarChar(15)
-  dateOfBirth DateTime
+  password    String    @db.VarChar(255)
+  phoneNumber String?   @unique @db.VarChar(15)
+  dateOfBirth DateTime?
+  role        Role      @default(USER)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   testResults TestResult[]
-}
-
-model Admin {
-  id          Int       @id @default(autoincrement())
-  username    String    @unique @db.VarChar(255)
-  name        String    @db.VarChar(255)
-  password    String    @db.VarChar(255)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  tests       Test[]
-}
-
-model Superadmin {
-  id          Int       @id @default(autoincrement())
-  username    String    @unique @db.VarChar(255)
-  name        String    @db.VarChar(255)
-  password    String    @db.VarChar(255)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 }
 
 model Test {
@@ -47,10 +29,8 @@ model Test {
   minAge      Int
   maxAge      Int
   status      TestStatus @default(PENDING)
-  createdBy   Int
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  admin       Admin      @relation(fields: [createdBy], references: [id])
   options     Option[]
   scores      Score[]
   questions   Question[]
@@ -138,4 +118,10 @@ enum TestStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPERADMIN
 }
