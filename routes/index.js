@@ -29,7 +29,7 @@ const { validateAdmin, validateUpdateAdmin } = require('../utils/validators/admi
 const { validateUpdateUser } = require('../utils/validators/user');
 
 //import validate test
-const { validateCreateTest } = require('../utils/validators/test');
+const { validateCreateTest, validateCreateSubskala, validateCreateQuestion, validateSaveQuestionOrder, validateSubmitAnswers, validateGetTestResult } = require('../utils/validators/test');
 
 //import auth middleware
 const verifyToken = require('../middlewares/auth');
@@ -72,6 +72,21 @@ router.delete('/user/account/:id', verifyToken, userController.deleteAccount);
 
 //define route for create test
 router.post('/admin/test', verifyToken, validateCreateTest, testController.createTest);
+
+//define route for create subskala
+router.post('/admin/subskala', verifyToken, validateCreateSubskala, testController.createSubskala);
+
+//define route for create question
+router.post('/admin/question', verifyToken, validateCreateQuestion, testController.createQuestion);
+
+//define route for save question order
+router.post('/admin/question-order', verifyToken, validateSaveQuestionOrder, testController.saveQuestionOrder);
+
+//define route for submit answers
+router.post('/admin/submit-answers', verifyToken, validateSubmitAnswers, testController.submitAnswers);
+
+//define route for get test result
+router.get('/admin/test-result/:userId/:testId', verifyToken, validateGetTestResult, testController.getTestResult);
 
 //export router
 module.exports = router

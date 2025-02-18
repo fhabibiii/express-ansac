@@ -47,69 +47,73 @@ model Test {
   status      TestStatus @default(PENDING)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  categories  Category[]
+  subskala    Subskala[]
   testResults TestResult[]
+  questionOrders QuestionOrder[]
 }
 
-// Model Category
-model Category {
-  id            Int                   @id @default(autoincrement())
-  name          String                @db.VarChar(255)
+// Model Subskala
+model Subskala {
+  id            Int        @id @default(autoincrement())
+  name          String     @db.VarChar(255)
   testId        Int
-  test          Test                   @relation(fields: [testId], references: [id])
+  test          Test       @relation(fields: [testId], references: [id])
+  label1        String     @db.VarChar(255) @default("Normal")
+  description1  String     @db.Text
+  minValue1     Int
+  maxValue1     Int
+  label2        String     @db.VarChar(255) @default("Borderline")
+  description2  String     @db.Text
+  minValue2     Int
+  maxValue2     Int
+  label3        String     @db.VarChar(255) @default("Abnormal")
+  description3  String     @db.Text
+  minValue3     Int
+  maxValue3     Int
   questions     Question[]
-  ranges        CategoryRange[]
-  maxQuestions  Int                    @default(5)
-  testScores    TestCategoryScore[]    // Relasi balik ke TestCategoryScore
-}
-
-// Model CategoryRange
-model CategoryRange {
-  id          Int        @id @default(autoincrement())
-  categoryId  Int
-  minValue    Int
-  maxValue    Int
-  label       String     @db.VarChar(255)
-  desc        String     @db.Text
-  category    Category   @relation(fields: [categoryId], references: [id])
+  testResultSubskala TestResultSubskala[]
 }
 
 // Model Question
 model Question {
   id            Int        @id @default(autoincrement())
   text          String     @db.Text
-  categoryId    Int
-  category      Category   @relation(fields: [categoryId], references: [id])
-  options       QuestionOption[]
-  isForward     Boolean    // Nilai maju atau mundur
+  subskalaId    Int
+  subskala      Subskala   @relation(fields: [subskalaId], references: [id])
+  option1Label  String     @db.VarChar(255) @default("Tidak Benar")
+  option1Value  Int        
+  option2Label  String     @db.VarChar(255) @default("Agak Benar")
+  option2Value  Int        
+  option3Label  String     @db.VarChar(255) @default("Benar")
+  option3Value  Int        
+  questionOrders QuestionOrder[]
 }
 
-// Model QuestionOption
-model QuestionOption {
-  id          Int     @id @default(autoincrement())
-  questionId  Int
-  value       Int     // Nilai opsi (0, 1, 2)
-  label       String  // Label opsi (Tidak Benar, Agak Benar, Benar)
-  question    Question @relation(fields: [questionId], references: [id])
-}
-
-// Model TestResult
 model TestResult {
-  id              Int       @id @default(autoincrement())
-  userId          Int
-  testId          Int
-  createdAt       DateTime  @default(now())
-  user            User      @relation(fields: [userId], references: [id])
-  test            Test      @relation(fields: [testId], references: [id])
-  scores          TestCategoryScore[]
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  testId       Int
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id])
+  test         Test      @relation(fields: [testId], references: [id])
+  subskalaResults TestResultSubskala[]
 }
 
-// Model TestCategoryScore untuk menyimpan skor per kategori
-model TestCategoryScore {
-  id           Int        @id @default(autoincrement())
-  testResultId Int
-  categoryId   Int
-  score        Int
-  category     Category   @relation(fields: [categoryId], references: [id])
-  testResult   TestResult @relation(fields: [testResultId], references: [id])
+model TestResultSubskala {
+  id            Int      @id @default(autoincrement())
+  testResultId  Int
+  subskalaId    Int
+  score         Int
+  testResult    TestResult @relation(fields: [testResultId], references: [id])
+  subskala      Subskala   @relation(fields: [subskalaId], references: [id])
+}
+
+// Model QuestionOrder
+model QuestionOrder {
+  id          Int      @id @default(autoincrement())
+  testId      Int
+  questionId  Int
+  order       Int
+  test        Test     @relation(fields: [testId], references: [id])
+  question    Question @relation(fields: [questionId], references: [id])
 }
