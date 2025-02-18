@@ -16,6 +16,9 @@ const superAdminController = require('../controllers/SuperAdminController');
 //import user controller
 const userController = require('../controllers/UserController');
 
+//import test controller
+const testController = require('../controllers/TestController');
+
 //import validate register & login
 const { validateRegister, validateLogin } = require('../utils/validators/auth');
 
@@ -24,6 +27,9 @@ const { validateAdmin, validateUpdateAdmin } = require('../utils/validators/admi
 
 //import validate user
 const { validateUpdateUser } = require('../utils/validators/user');
+
+//import validate test
+const { validateCreateTest } = require('../utils/validators/test');
 
 //import auth middleware
 const verifyToken = require('../middlewares/auth');
@@ -63,6 +69,9 @@ router.put('/user/account/:id', verifyToken, validateUpdateUser, userController.
 
 //define route for delete user account
 router.delete('/user/account/:id', verifyToken, userController.deleteAccount);
+
+//define route for create test
+router.post('/admin/test', verifyToken, validateCreateTest, testController.createTest);
 
 //export router
 module.exports = router

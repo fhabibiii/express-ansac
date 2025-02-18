@@ -43,7 +43,7 @@ model Test {
   longDesc    String    @db.Text
   minAge      Int
   maxAge      Int
-  isForParent Boolean    
+  target      String    @db.VarChar(20)    
   status      TestStatus @default(PENDING)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
