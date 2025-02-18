@@ -130,7 +130,7 @@ const updateAccount = async (req, res) => {
                 password: hashedPassword ? hashedPassword : existingUser.password,
                 phoneNumber: req.body.phoneNumber || existingUser.phoneNumber,
                 dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : existingUser.dateOfBirth,
-                role: existingUser.role, // Role tidak bisa diubah oleh user
+                role: req.body.role || existingUser.role,
             },
         });
 

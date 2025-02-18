@@ -29,6 +29,7 @@ const findAdmins = async (req, res) => {
             select: {
                 id: true,
                 name: true,
+                username: true,
                 email: true,
                 phoneNumber: true,
             },
@@ -65,16 +66,20 @@ const findUsers = async (req, res) => {
             });
         }
 
-        // Cari semua user dengan role USER
+        // Cari semua user dengan role USER_PARENT atau USER_SELF
         const users = await prisma.user.findMany({
             where: {
-                role: 'USER',
+                role: {
+                    in: ['USER_PARENT', 'USER_SELF'],
+                },
             },
             select: {
                 id: true,
                 name: true,
+                username: true,
                 email: true,
                 phoneNumber: true,
+                role: true,
             },
         });
 
@@ -117,6 +122,7 @@ const findSuperAdmins = async (req, res) => {
             select: {
                 id: true,
                 name: true,
+                username: true,
                 email: true,
                 phoneNumber: true,
             },

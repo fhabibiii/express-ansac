@@ -34,6 +34,15 @@ router.post('/register', validateRegister, registerController.register);
 //define route for login
 router.post('/login', validateLogin, loginController.login);
 
+//define route for findSuperAdmins
+router.get('/superadmin/account/superadmin', verifyToken, superAdminController.findSuperAdmins);
+
+//define route for findAdmins
+router.get('/superadmin/account/admin', verifyToken, superAdminController.findAdmins);
+
+//define route for findUsers
+router.get('/superadmin/account/user', verifyToken, superAdminController.findUsers);
+
 //define route for create Account
 router.post('/superadmin/account', verifyToken, validateAdmin, superAdminController.createAccount);
 
@@ -45,15 +54,6 @@ router.put('/superadmin/account/:id', verifyToken, validateUpdateAdmin, superAdm
 
 //define route for delete Account
 router.delete('/superadmin/account/:id', verifyToken, superAdminController.deleteAccount);
-
-//define route for findSuperAdmins
-router.get('/superadmin/account/superadmin', verifyToken, superAdminController.findSuperAdmins);
-
-//define route for findAdmins
-router.get('/superadmin/account/admin', verifyToken, superAdminController.findAdmins);
-
-//define route for findUsers
-router.get('/superadmin/account/user', verifyToken, superAdminController.findUsers);
 
 //define route for find user account by id
 router.get('/user/account/:id', verifyToken, userController.findAccountById);

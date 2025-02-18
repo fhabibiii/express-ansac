@@ -25,7 +25,7 @@ const validateRegister = [
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
     body('phoneNumber')
         .notEmpty().withMessage('Phone number is required')
-        .isLength({ max: 15 }).withMessage('Phone number must be at most 15 characters long')
+        .isLength({ max: 14 }).withMessage('Phone number must be at most 14 characters long')
         .custom(async (value) => {
             const user = await prisma.user.findUnique({ where: { phoneNumber: value } });
             if (user) {
@@ -33,12 +33,9 @@ const validateRegister = [
             }
             return true;
         }),
-    body('role').custom((value) => {
-        if (value) {
-            throw new Error('User does not have access to choose role');
-        }
-        return true;
-    }),
+    body('role')
+        .notEmpty().withMessage('Role is required')
+        .isIn(['USER_SELF', 'USER_PARENT']).withMessage('Role must be either USER_SELF or USER_PARENT'),
 ];
 
 const validateLogin = [

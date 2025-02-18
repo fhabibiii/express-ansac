@@ -25,7 +25,7 @@ const validateAdmin = [
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
     body('phoneNumber')
         .notEmpty().withMessage('Phone number is required')
-        .isLength({ max: 15 }).withMessage('Phone number must be at most 15 characters long')
+        .isLength({ max: 14 }).withMessage('Phone number must be at most 14 characters long')
         .custom(async (value) => {
             const user = await prisma.user.findUnique({ where: { phoneNumber: value } });
             if (user) {
@@ -35,44 +35,46 @@ const validateAdmin = [
         }),
     body('role')
         .notEmpty().withMessage('Role is required')
-        .isIn(['USER', 'ADMIN', 'SUPERADMIN']).withMessage('Invalid role'),
+        .isIn(['USER_SELF', 'USER_PARENT', 'ADMIN', 'SUPERADMIN']).withMessage('Invalid role'),
 ];
 
 const validateUpdateAdmin = [
     body('username')
-        .optional()
-        .custom(async (value) => {
+        .optional({ checkFalsy: true })
+        .custom(async (value, { req }) => {
             const user = await prisma.user.findUnique({ where: { username: value } });
-            if (user) {
+            if (user && user.id !== Number(req.params.id)) {
                 throw new Error('Username already exists');
             }
             return true;
         }),
-    body('name').optional(),
+    body('name').optional({ checkFalsy: true }),
     body('email')
-        .optional()
+        .optional({ checkFalsy: true })
         .isEmail().withMessage('Email is invalid')
-        .custom(async (value) => {
+        .custom(async (value, { req }) => {
             const user = await prisma.user.findUnique({ where: { email: value } });
-            if (user) {
+            if (user && user.id !== Number(req.params.id)) {
                 throw new Error('Email already exists');
             }
             return true;
         }),
-    body('password').optional().isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+    body('password')
+        .optional({ checkFalsy: true })
+        .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
     body('phoneNumber')
-        .optional()
-        .isLength({ max: 15 }).withMessage('Phone number must be at most 15 characters long')
-        .custom(async (value) => {
+        .optional({ checkFalsy: true })
+        .isLength({ max: 14 }).withMessage('Phone number must be at most 14 characters long')
+        .custom(async (value, { req }) => {
             const user = await prisma.user.findUnique({ where: { phoneNumber: value } });
-            if (user) {
+            if (user && user.id !== Number(req.params.id)) {
                 throw new Error('Phone number already exists');
             }
             return true;
         }),
     body('role')
-        .optional()
-        .isIn(['USER', 'ADMIN', 'SUPERADMIN']).withMessage('Invalid role'),
+        .optional({ checkFalsy: true })
+        .isIn(['USER_SELF', 'USER_PARENT', 'ADMIN', 'SUPERADMIN']).withMessage('Invalid role'),
 ];
 
 module.exports = {

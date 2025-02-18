@@ -3,43 +3,41 @@ const prisma = require('../../prisma/client');
 
 const validateUpdateUser = [
     body('username')
-        .optional()
-        .custom(async (value) => {
+        .optional({ checkFalsy: true })
+        .custom(async (value, { req }) => {
             const user = await prisma.user.findUnique({ where: { username: value } });
-            if (user) {
+            if (user && user.id !== Number(req.params.id)) {
                 throw new Error('Username already exists');
             }
             return true;
         }),
-    body('name').optional(),
+    body('name').optional({ checkFalsy: true }),
     body('email')
-        .optional()
+        .optional({ checkFalsy: true })
         .isEmail().withMessage('Email is invalid')
-        .custom(async (value) => {
+        .custom(async (value, { req }) => {
             const user = await prisma.user.findUnique({ where: { email: value } });
-            if (user) {
+            if (user && user.id !== Number(req.params.id)) {
                 throw new Error('Email already exists');
             }
             return true;
         }),
-    body('password').optional().isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+    body('password')
+        .optional({ checkFalsy: true })
+        .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
     body('phoneNumber')
-        .optional()
-        .isLength({ max: 15 }).withMessage('Phone number must be at most 15 characters long')
-        .custom(async (value) => {
+        .optional({ checkFalsy: true })
+        .isLength({ max: 14 }).withMessage('Phone number must be at most 14 characters long')
+        .custom(async (value, { req }) => {
             const user = await prisma.user.findUnique({ where: { phoneNumber: value } });
-            if (user) {
+            if (user && user.id !== Number(req.params.id)) {
                 throw new Error('Phone number already exists');
             }
             return true;
         }),
     body('role')
-        .custom((value) => {
-            if (value) {
-                throw new Error('User does not have access to choose role');
-            }
-            return true;
-        }),
+        .optional({ checkFalsy: true })
+        .isIn(['USER_SELF', 'USER_PARENT']).withMessage('Role must be either USER_SELF or USER_PARENT'),
 ];
 
 module.exports = {

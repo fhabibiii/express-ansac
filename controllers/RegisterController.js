@@ -38,6 +38,7 @@ const register = async (req, res) => {
                 password: hashedPassword,
                 phoneNumber: req.body.phoneNumber,
                 dateOfBirth: new Date(req.body.dateOfBirth),
+                role: req.body.role,
             },
         });
 
