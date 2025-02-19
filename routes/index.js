@@ -96,32 +96,32 @@ router.post('/admin/question', verifyToken, testValidators.validateCreateQuestio
 //define route for save question order
 router.post('/admin/questionorder', verifyToken, testValidators.validateSaveQuestionOrder, testController.saveQuestionOrder);
 
-// //define route for get all test
-// router.get('/admin/test', verifyToken, testController.getAllTest);
+//define route for get all test
+router.get('/admin/test', verifyToken, testController.getAllTest);
 
-// //define route for get test by id
-// router.get('/admin/test/:testId', verifyToken, testController.getTestById);
+//define route for get test by id
+router.get('/admin/test/:testId', verifyToken, testValidators.validateGetTestById, testController.getTestById);
 
-// //define route for get all subskala by testId
-// router.get('/admin/subskala/:testId', verifyToken, testController.getAllSubskalaByTestId);
+//define route for get all subskala by testId
+router.get('/admin/subskala/:testId', verifyToken, testValidators.validateGetAllSubskalaByTestId, testController.getAllSubskalaByTestId);
 
-// //define route for get all question by subskalaId
-// router.get('/admin/question/:subskalaId', verifyToken, testController.getAllQuestionBySubskalaId);
+//define route for get all question by subskalaId
+router.get('/admin/question/:subskalaId', verifyToken, testValidators.validateGetAllQuestionBySubskalaId, testController.getAllQuestionBySubskalaId);
 
-// //define route for edit test
-// router.put('/admin/test/:testId', verifyToken, testController.editTest);
+//define route for edit test
+router.put('/admin/test/:testId', verifyToken, testValidators.validateEditTest, testController.editTest);
 
-// //define route for edit subskala
-// router.put('/admin/subskala/:subskalaId', verifyToken, testController.editSubskala);
+//define route for edit subskala
+router.put('/admin/subskala/:subskalaId', verifyToken, testValidators.validateEditSubskala, testController.editSubskala);
 
-// //define route for edit question
-// router.put('/admin/question/:questionId', verifyToken, testController.editQuestion);
+//define route for edit question
+router.put('/admin/question/:questionId', verifyToken, testValidators.validateEditQuestion, testController.editQuestion);
 
-// //define route for get all test results
-// router.get('/admin/test/result', verifyToken, testController.getAllTestResults);
+//define route for get all test results
+router.get('/admin/test/result', verifyToken, testController.getAllUserTestResults);
 
-// //define route for get test result by testResultId
-// router.get('/admin/test/result/:testResultId', verifyToken, testController.getTestResult);
+//define route for get test result by testResultId
+router.get('/admin/test/result/:testResultId', verifyToken, testValidators.validateGetTestResultAdmin, testController.getTestResultAdmin);
 
 // TEST
 

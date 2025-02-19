@@ -300,6 +300,657 @@ const saveQuestionOrder = async (req, res) => {
     }
 };
 
+// Get All Tests
+const getAllTest = async (req, res) => {
+    try {
+        // Cari user berdasarkan req.userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId,
+            },
+        });
+
+        // Periksa peran user
+        if (user.role === 'ADMIN') {
+            // Tampilkan semua test yang statusnya PENDING dan REJECTED
+            const tests = await prisma.test.findMany({
+                where: {
+                    status: {
+                        in: ['PENDING', 'REJECTED']
+                    }
+                }
+            });
+
+            return res.status(200).json({
+                success: true,
+                data: tests
+            });
+        } else if (user.role === 'SUPERADMIN') {
+            // Tampilkan semua test yang ada
+            const tests = await prisma.test.findMany();
+
+            return res.status(200).json({
+                success: true,
+                data: tests
+            });
+        } else if (user.role === 'USER_SELF' || user.role === 'USER_PARENT') {
+            // Kembalikan pesan bahwa role tersebut tidak bisa mengakses fungsi ini
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. Your role cannot access this function."
+            });
+        } else {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied."
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+// Get Test by ID
+const getTestById = async (req, res) => {
+    // Periksa hasil validasi
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Jika ada error, kembalikan error ke pengguna
+        return res.status(422).json({
+            success: false,
+            message: "Validation error",
+            errors: errors.array(),
+        });
+    }
+
+    try {
+        // Cari user berdasarkan req.userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId,
+            },
+        });
+
+        // Periksa apakah user memiliki role ADMIN atau SUPERADMIN
+        if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
+
+        const { testId } = req.params;
+
+        // Periksa apakah testId tersedia
+        const test = await prisma.test.findUnique({
+            where: { id: parseInt(testId) }
+        });
+
+        if (!test) {
+            return res.status(404).json({
+                success: false,
+                message: "Test ID not found",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                id: test.id,
+                title: test.title,
+                shortDesc: test.shortDesc,
+                longDesc: test.longDesc,
+                minAge: test.minAge,
+                maxAge: test.maxAge,
+                target: test.target,
+                status: test.status
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+// Get All Subskala by Test ID
+const getAllSubskalaByTestId = async (req, res) => {
+    // Periksa hasil validasi
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Jika ada error, kembalikan error ke pengguna
+        return res.status(422).json({
+            success: false,
+            message: "Validation error",
+            errors: errors.array(),
+        });
+    }
+
+    try {
+        // Cari user berdasarkan req.userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId,
+            },
+        });
+
+        // Periksa apakah user memiliki role ADMIN atau SUPERADMIN
+        if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
+
+        const { testId } = req.params;
+
+        // Periksa apakah testId tersedia
+        const test = await prisma.test.findUnique({
+            where: { id: parseInt(testId) },
+            include: { subskala: true }
+        });
+
+        if (!test) {
+            return res.status(404).json({
+                success: false,
+                message: "Test ID not found",
+            });
+        }
+
+        if (!test.subskala.length) {
+            return res.status(404).json({
+                success: false,
+                message: "No subskala found for this test ID",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: test.subskala
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+// Get All Question by Subskala ID
+const getAllQuestionBySubskalaId = async (req, res) => {
+    // Periksa hasil validasi
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Jika ada error, kembalikan error ke pengguna
+        return res.status(422).json({
+            success: false,
+            message: "Validation error",
+            errors: errors.array(),
+        });
+    }
+
+    try {
+        // Cari user berdasarkan req.userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId,
+            },
+        });
+
+        // Periksa apakah user memiliki role ADMIN atau SUPERADMIN
+        if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
+
+        const { subskalaId } = req.params;
+
+        // Periksa apakah subskalaId tersedia
+        const subskala = await prisma.subskala.findUnique({
+            where: { id: parseInt(subskalaId) },
+            include: { questions: true }
+        });
+
+        if (!subskala) {
+            return res.status(404).json({
+                success: false,
+                message: "Subskala ID not found",
+            });
+        }
+
+        if (!subskala.questions.length) {
+            return res.status(404).json({
+                success: false,
+                message: "No questions found for this subskala ID",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: subskala.questions
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+// Get All User Test Results
+const getAllUserTestResults = async (req, res) => {
+    try {
+        // Cari user berdasarkan req.userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId,
+            },
+        });
+
+        // Periksa apakah user memiliki role ADMIN atau SUPERADMIN
+        if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
+
+        const testResults = await prisma.testResult.findMany({
+            include: {
+                subskalaResults: {
+                    include: {
+                        subskala: true
+                    }
+                },
+                test: true,
+                user: true
+            }
+        });
+
+        if (!testResults.length) {
+            return res.status(404).json({
+                success: false,
+                message: "No test results found."
+            });
+        }
+
+        const formattedResults = testResults.map(testResult => ({
+            testResultId: testResult.id,
+            testId: testResult.testId,
+            title: testResult.test.title,
+            createdAt: testResult.createdAt,
+            userId: testResult.userId,
+            userName: testResult.user.name,
+            userEmail: testResult.user.email
+        }));
+
+        res.status(200).json({
+            success: true,
+            message: "Get all user test results success.",
+            data: formattedResults
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+// Get Test Result for Admin
+const getTestResultAdmin = async (req, res) => {
+    // Periksa hasil validasi
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Jika ada error, kembalikan error ke pengguna
+        return res.status(422).json({
+            success: false,
+            message: "Validation error",
+            errors: errors.array(),
+        });
+    }
+
+    try {
+        // Cari user berdasarkan req.userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId,
+            },
+        });
+
+        // Periksa apakah user memiliki role ADMIN atau SUPERADMIN
+        if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
+
+        const { testResultId } = req.params;
+
+        // Periksa apakah testResultId tersedia
+        const testResult = await prisma.testResult.findUnique({
+            where: { id: parseInt(testResultId) },
+            include: {
+                subskalaResults: {
+                    include: {
+                        subskala: true
+                    }
+                },
+                test: true,
+                user: true
+            }
+        });
+
+        if (!testResult) {
+            return res.status(404).json({
+                success: false,
+                message: "Test result not found."
+            });
+        }
+
+        const formattedResults = testResult.subskalaResults.map(result => {
+            let category;
+            if (result.score >= result.subskala.minValue3) {
+                category = result.subskala.label3;
+            } else if (result.score >= result.subskala.minValue2) {
+                category = result.subskala.label2;
+            } else {
+                category = result.subskala.label1;
+            }
+            return {
+                subskala: result.subskala.name,
+                score: result.score,
+                category,
+                description: category === result.subskala.label3 ? result.subskala.description3 :
+                             category === result.subskala.label2 ? result.subskala.description2 :
+                             result.subskala.description1
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Get test result success.",
+            data: {
+                testResultId: testResult.id,
+                title: testResult.test.title,
+                createdAt: testResult.createdAt,
+                user: {
+                    id: testResult.user.id,
+                    name: testResult.user.name,
+                    email: testResult.user.email
+                },
+                results: formattedResults
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+// Edit Test
+const editTest = async (req, res) => {
+    // Periksa hasil validasi
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Jika ada error, kembalikan error ke pengguna
+        return res.status(422).json({
+            success: false,
+            message: "Validation error",
+            errors: errors.array(),
+        });
+    }
+
+    try {
+        // Cari user berdasarkan req.userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId,
+            },
+        });
+
+        // Periksa apakah user memiliki role ADMIN atau SUPERADMIN
+        if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
+
+        const { testId } = req.params;
+        const { title, shortDesc, longDesc, minAge, maxAge, target } = req.body;
+
+        // Periksa apakah testId tersedia
+        const test = await prisma.test.findUnique({
+            where: { id: parseInt(testId) }
+        });
+
+        if (!test) {
+            return res.status(404).json({
+                success: false,
+                message: "Test ID not found",
+            });
+        }
+
+        // Periksa apakah status test bukan APPROVED
+        if (test.status === 'APPROVED') {
+            return res.status(403).json({
+                success: false,
+                message: "Cannot edit an approved test",
+            });
+        }
+
+        // Update data test
+        const updatedTest = await prisma.test.update({
+            where: { id: parseInt(testId) },
+            data: {
+                title: title || test.title,
+                shortDesc: shortDesc || test.shortDesc,
+                longDesc: longDesc || test.longDesc,
+                minAge: minAge !== undefined ? minAge : test.minAge,
+                maxAge: maxAge !== undefined ? maxAge : test.maxAge,
+                target: target || test.target
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Test updated successfully",
+            data: updatedTest
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+// Edit Subskala
+const editSubskala = async (req, res) => {
+    // Periksa hasil validasi
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Jika ada error, kembalikan error ke pengguna
+        return res.status(422).json({
+            success: false,
+            message: "Validation error",
+            errors: errors.array(),
+        });
+    }
+
+    try {
+        // Cari user berdasarkan req.userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId,
+            },
+        });
+
+        // Periksa apakah user memiliki role ADMIN atau SUPERADMIN
+        if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
+
+        const { subskalaId } = req.params;
+        const { name, description1, minValue1, maxValue1, description2, minValue2, maxValue2, description3, minValue3, maxValue3 } = req.body;
+
+        // Periksa apakah subskalaId tersedia
+        const subskala = await prisma.subskala.findUnique({
+            where: { id: parseInt(subskalaId) },
+            include: { test: true }
+        });
+
+        if (!subskala) {
+            return res.status(404).json({
+                success: false,
+                message: "Subskala ID not found",
+            });
+        }
+
+        // Periksa apakah status test bukan APPROVED
+        if (subskala.test.status === 'APPROVED') {
+            return res.status(403).json({
+                success: false,
+                message: "Cannot edit subskala of an approved test",
+            });
+        }
+
+        // Update data subskala
+        const updatedSubskala = await prisma.subskala.update({
+            where: { id: parseInt(subskalaId) },
+            data: {
+                name: name || subskala.name,
+                description1: description1 || subskala.description1,
+                minValue1: minValue1 !== undefined ? minValue1 : subskala.minValue1,
+                maxValue1: maxValue1 !== undefined ? maxValue1 : subskala.maxValue1,
+                description2: description2 || subskala.description2,
+                minValue2: minValue2 !== undefined ? minValue2 : subskala.minValue2,
+                maxValue2: maxValue2 !== undefined ? maxValue2 : subskala.maxValue2,
+                description3: description3 || subskala.description3,
+                minValue3: minValue3 !== undefined ? minValue3 : subskala.minValue3,
+                maxValue3: maxValue3 !== undefined ? maxValue3 : subskala.maxValue3
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Subskala updated successfully",
+            data: updatedSubskala
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+// Edit Question
+const editQuestion = async (req, res) => {
+    // Periksa hasil validasi
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Jika ada error, kembalikan error ke pengguna
+        return res.status(422).json({
+            success: false,
+            message: "Validation error",
+            errors: errors.array(),
+        });
+    }
+
+    try {
+        // Cari user berdasarkan req.userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId,
+            },
+        });
+
+        // Periksa apakah user memiliki role ADMIN atau SUPERADMIN
+        if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
+
+        const { questionId } = req.params;
+        const { text, option1Value, option2Value, option3Value } = req.body;
+
+        // Periksa apakah questionId tersedia
+        const question = await prisma.question.findUnique({
+            where: { id: parseInt(questionId) },
+            include: { subskala: { include: { test: true } } }
+        });
+
+        if (!question) {
+            return res.status(404).json({
+                success: false,
+                message: "Question ID not found",
+            });
+        }
+
+        // Periksa apakah status test bukan APPROVED
+        if (question.subskala.test.status === 'APPROVED') {
+            return res.status(403).json({
+                success: false,
+                message: "Cannot edit question of an approved test",
+            });
+        }
+
+        // Update data question
+        const updatedQuestion = await prisma.question.update({
+            where: { id: parseInt(questionId) },
+            data: {
+                text: text || question.text,
+                option1Value: option1Value !== undefined ? option1Value : question.option1Value,
+                option2Value: option2Value !== undefined ? option2Value : question.option2Value,
+                option3Value: option3Value !== undefined ? option3Value : question.option3Value
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Question updated successfully",
+            data: updatedQuestion
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
 
 /* ======================================================================================================================
                                                 FOR USER_SELF AND USER_PARENT 
@@ -745,6 +1396,15 @@ module.exports = {
     createSubskala,
     createQuestion,
     saveQuestionOrder,
+    getAllTest,
+    getTestById,
+    getAllSubskalaByTestId,
+    getAllQuestionBySubskalaId,
+    getAllUserTestResults,
+    getTestResultAdmin,
+    editTest,
+    editSubskala,
+    editQuestion,
     submitAnswers,
     getTestResultbyId,
     getAllTestResults,

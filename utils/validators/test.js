@@ -1,5 +1,4 @@
 const { body, param } = require('express-validator');
-const prisma = require('../../prisma/client');
 
 const validateCreateTest = [
     body('title')
@@ -28,6 +27,48 @@ const validateCreateTest = [
         }),
     body('target')
         .notEmpty().withMessage('Target is required')
+        .isString().withMessage('Target must be a string')
+        .isIn(['SELF', 'PARENT']).withMessage('Target must be either SELF or PARENT'),
+    body('status')
+        .custom((value) => {
+            if (value !== undefined) {
+                throw new Error('Status should not be provided');
+            }
+            return true;
+        }),
+];
+
+const validateEditTest = [
+    param('testId')
+        .notEmpty().withMessage('Test ID is required')
+        .isInt().withMessage('Test ID must be an integer')
+        .toInt(),
+    body('title')
+        .optional()
+        .isString().withMessage('Title must be a string'),
+    body('shortDesc')
+        .optional()
+        .isString().withMessage('Short description must be a string')
+        .isLength({ max: 100 }).withMessage('Short description must be at most 100 characters long'),
+    body('longDesc')
+        .optional()
+        .isString().withMessage('Long description must be a string'),
+    body('minAge')
+        .optional()
+        .isInt({ min: 0 }).withMessage('Minimum age must be a positive integer')
+        .toInt(),
+    body('maxAge')
+        .optional()
+        .isInt({ min: 0 }).withMessage('Maximum age must be a positive integer')
+        .toInt()
+        .custom((value, { req }) => {
+            if (value < req.body.minAge) {
+                throw new Error('Maximum age must be greater than or equal to minimum age');
+            }
+            return true;
+        }),
+    body('target')
+        .optional()
         .isString().withMessage('Target must be a string')
         .isIn(['SELF', 'PARENT']).withMessage('Target must be either SELF or PARENT'),
     body('status')
@@ -103,6 +144,70 @@ const validateCreateSubskala = [
         }),
 ];
 
+const validateEditSubskala = [
+    param('subskalaId')
+        .notEmpty().withMessage('Subskala ID is required')
+        .isInt().withMessage('Subskala ID must be an integer')
+        .toInt(),
+    body('name')
+        .optional()
+        .isString().withMessage('Name must be a string'),
+    body('description1')
+        .optional()
+        .isString().withMessage('Description1 must be a string'),
+    body('minValue1')
+        .optional()
+        .isInt().withMessage('MinValue1 must be an integer')
+        .toInt(),
+    body('maxValue1')
+        .optional()
+        .isInt().withMessage('MaxValue1 must be an integer')
+        .toInt(),
+    body('description2')
+        .optional()
+        .isString().withMessage('Description2 must be a string'),
+    body('minValue2')
+        .optional()
+        .isInt().withMessage('MinValue2 must be an integer')
+        .toInt(),
+    body('maxValue2')
+        .optional()
+        .isInt().withMessage('MaxValue2 must be an integer')
+        .toInt(),
+    body('description3')
+        .optional()
+        .isString().withMessage('Description3 must be a string'),
+    body('minValue3')
+        .optional()
+        .isInt().withMessage('MinValue3 must be an integer')
+        .toInt(),
+    body('maxValue3')
+        .optional()
+        .isInt().withMessage('MaxValue3 must be an integer')
+        .toInt(),
+    body('label1')
+        .custom((value) => {
+            if (value !== undefined) {
+                throw new Error('Label1 should not be provided');
+            }
+            return true;
+        }),
+    body('label2')
+        .custom((value) => {
+            if (value !== undefined) {
+                throw new Error('Label2 should not be provided');
+            }
+            return true;
+        }),
+    body('label3')
+        .custom((value) => {
+            if (value !== undefined) {
+                throw new Error('Label3 should not be provided');
+            }
+            return true;
+        }),
+];
+
 const validateCreateQuestion = [
     body('subskalaId')
         .notEmpty().withMessage('Subskala ID is required')
@@ -123,6 +228,56 @@ const validateCreateQuestion = [
         .notEmpty().withMessage('Option3Value is required')
         .isInt().withMessage('Option3Value must be an integer')
         .toInt(),
+    body('option1Label')
+        .custom((value) => {
+            if (value !== undefined) {
+                throw new Error('Option1Label should not be provided');
+            }
+            return true;
+        }),
+    body('option2Label')
+        .custom((value) => {
+            if (value !== undefined) {
+                throw new Error('Option2Label should not be provided');
+            }
+            return true;
+        }),
+    body('option3Label')
+        .custom((value) => {
+            if (value !== undefined) {
+                throw new Error('Option3Label should not be provided');
+            }
+            return true;
+        }),
+];
+
+const validateEditQuestion = [
+    param('questionId')
+        .notEmpty().withMessage('Question ID is required')
+        .isInt().withMessage('Question ID must be an integer')
+        .toInt(),
+    body('text')
+        .optional()
+        .isString().withMessage('Text must be a string'),
+    body('option1Value')
+        .optional()
+        .isInt().withMessage('Option1Value must be an integer')
+        .toInt(),
+    body('option2Value')
+        .optional()
+        .isInt().withMessage('Option2Value must be an integer')
+        .toInt(),
+    body('option3Value')
+        .optional()
+        .isInt().withMessage('Option3Value must be an integer')
+        .toInt(),
+    body('subskalaId')
+        .custom((value) => {
+            if (value !== undefined) {
+                throw new Error('Subskala ID should not be provided');
+            }
+            return true;
+        }),
     body('option1Label')
         .custom((value) => {
             if (value !== undefined) {
@@ -211,6 +366,34 @@ const validateDeleteTest = [
         .toInt(),
 ];
 
+const validateGetTestById = [
+    param('testId')
+        .notEmpty().withMessage('Test ID is required')
+        .isInt().withMessage('Test ID must be an integer')
+        .toInt(),
+];
+
+const validateGetAllSubskalaByTestId = [
+    param('testId')
+        .notEmpty().withMessage('Test ID is required')
+        .isInt().withMessage('Test ID must be an integer')
+        .toInt(),
+];
+
+const validateGetAllQuestionBySubskalaId = [
+    param('subskalaId')
+        .notEmpty().withMessage('Subskala ID is required')
+        .isInt().withMessage('Subskala ID must be an integer')
+        .toInt(),
+];
+
+const validateGetTestResultAdmin = [
+    param('testResultId')
+        .notEmpty().withMessage('Test Result ID is required')
+        .isInt().withMessage('Test Result ID must be an integer')
+        .toInt(),
+];
+
 module.exports = {
     validateCreateTest,
     validateCreateSubskala,
@@ -221,4 +404,11 @@ module.exports = {
     validateGetAllTestResult,
     validateAcceptTest,
     validateDeleteTest,
+    validateGetTestById,
+    validateGetAllSubskalaByTestId,
+    validateGetAllQuestionBySubskalaId,
+    validateGetTestResultAdmin,
+    validateEditTest,
+    validateEditSubskala,
+    validateEditQuestion,
 };
