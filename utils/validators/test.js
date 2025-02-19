@@ -204,6 +204,13 @@ const validateAcceptTest = [
         .isIn(['APPROVED', 'REJECTED']).withMessage('Status must be either APPROVED or REJECTED'),
 ];
 
+const validateDeleteTest = [
+    param('testId')
+        .notEmpty().withMessage('Test ID is required')
+        .isInt().withMessage('Test ID must be an integer')
+        .toInt(),
+];
+
 module.exports = {
     validateCreateTest,
     validateCreateSubskala,
@@ -213,4 +220,5 @@ module.exports = {
     validateGetTestResult,
     validateGetAllTestResult,
     validateAcceptTest,
+    validateDeleteTest,
 };

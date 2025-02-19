@@ -488,6 +488,106 @@ const acceptTest = async (req, res) => {
     }
 };
 
+//function deleteTest
+const deleteTest = async (req, res) => {
+    // Periksa hasil validasi
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Jika ada error, kembalikan error ke pengguna
+        return res.status(422).json({
+            success: false,
+            message: "Validation error",
+            errors: errors.array(),
+        });
+    }
+
+    try {
+        // Cari user berdasarkan req.userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId,
+            },
+        });
+
+        // Periksa apakah user memiliki role SUPERADMIN
+        if (user.role !== 'SUPERADMIN') {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
+
+        const { testId } = req.params;
+
+        // Periksa apakah testId tersedia
+        const test = await prisma.test.findUnique({
+            where: { id: parseInt(testId) }
+        });
+
+        if (!test) {
+            return res.status(404).json({
+                success: false,
+                message: "Test ID not found",
+            });
+        }
+
+        // Hapus testResultSubskala yang terkait dengan testResult
+        await prisma.testResultSubskala.deleteMany({
+            where: {
+                testResult: {
+                    testId: parseInt(testId)
+                }
+            }
+        });
+
+        // Hapus testResult yang terkait dengan testId
+        await prisma.testResult.deleteMany({
+            where: { testId: parseInt(testId) }
+        });
+
+        // Hapus questionOrder yang terkait dengan testId
+        await prisma.questionOrder.deleteMany({
+            where: { testId: parseInt(testId) }
+        });
+
+        // Hapus question yang terkait dengan subskala
+        const subskalas = await prisma.subskala.findMany({
+            where: { testId: parseInt(testId) },
+            select: { id: true }
+        });
+
+        const subskalaIds = subskalas.map(subskala => subskala.id);
+
+        await prisma.question.deleteMany({
+            where: {
+                subskalaId: { in: subskalaIds }
+            }
+        });
+
+        // Hapus subskala yang terkait dengan testId
+        await prisma.subskala.deleteMany({
+            where: { testId: parseInt(testId) }
+        });
+
+        // Hapus test
+        await prisma.test.delete({
+            where: { id: parseInt(testId) }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Test with id: ${testId} and all related data deleted successfully`
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
 module.exports = { 
     createAccount,
     updateAccount,
@@ -496,5 +596,6 @@ module.exports = {
     findAdmins,
     findUsers,
     findSuperAdmins,
-    acceptTest  
+    acceptTest,
+    deleteTest  
 };
