@@ -29,16 +29,20 @@ const { validateAdmin, validateUpdateAdmin } = require('../utils/validators/admi
 const { validateUpdateUser } = require('../utils/validators/user');
 
 //import validate test
-const { validateCreateTest, validateCreateSubskala, validateCreateQuestion, validateSaveQuestionOrder, validateSubmitAnswers, validateGetTestResult } = require('../utils/validators/test');
+const { validateCreateTest, validateCreateSubskala, validateCreateQuestion, validateSaveQuestionOrder, validateSubmitAnswers, validateGetTestResult, validateGetAllTestResult, validateAcceptTest } = require('../utils/validators/test');
 
 //import auth middleware
 const verifyToken = require('../middlewares/auth');
+
+// LOGIN & REGISTER
 
 //define route for register
 router.post('/register', validateRegister, registerController.register);
 
 //define route for login
 router.post('/login', validateLogin, loginController.login);
+
+// SUPERADMIN
 
 //define route for findSuperAdmins
 router.get('/superadmin/account/superadmin', verifyToken, superAdminController.findSuperAdmins);
@@ -61,6 +65,11 @@ router.put('/superadmin/account/:id', verifyToken, validateUpdateAdmin, superAdm
 //define route for delete Account
 router.delete('/superadmin/account/:id', verifyToken, superAdminController.deleteAccount);
 
+//define route for accept test
+router.put('/superadmin/test/accept/:testId', verifyToken, validateAcceptTest, superAdminController.acceptTest);
+
+// USER
+
 //define route for find user account by id
 router.get('/user/account/:id', verifyToken, userController.findAccountById);
 
@@ -69,6 +78,8 @@ router.put('/user/account/:id', verifyToken, validateUpdateUser, userController.
 
 //define route for delete user account
 router.delete('/user/account/:id', verifyToken, userController.deleteAccount);
+
+// ADMIN
 
 //define route for create test
 router.post('/admin/test', verifyToken, validateCreateTest, testController.createTest);
@@ -80,13 +91,54 @@ router.post('/admin/subskala', verifyToken, validateCreateSubskala, testControll
 router.post('/admin/question', verifyToken, validateCreateQuestion, testController.createQuestion);
 
 //define route for save question order
-router.post('/admin/question-order', verifyToken, validateSaveQuestionOrder, testController.saveQuestionOrder);
+router.post('/admin/questionorder', verifyToken, validateSaveQuestionOrder, testController.saveQuestionOrder);
+
+// //define route for get all test
+// router.get('/admin/test', verifyToken, testController.getAllTest);
+
+// //define route for get test by id
+// router.get('/admin/test/:testId', verifyToken, testController.getTestById);
+
+// //define route for get all subskala by testId
+// router.get('/admin/subskala/:testId', verifyToken, testController.getAllSubskalaByTestId);
+
+// //define route for get all question by subskalaId
+// router.get('/admin/question/:subskalaId', verifyToken, testController.getAllQuestionBySubskalaId);
+
+// //define route for edit test
+// router.put('/admin/test/:testId', verifyToken, testController.editTest);
+
+// //define route for edit subskala
+// router.put('/admin/subskala/:subskalaId', verifyToken, testController.editSubskala);
+
+// //define route for edit question
+// router.put('/admin/question/:questionId', verifyToken, testController.editQuestion);
+
+// //define route for delete test
+// router.delete('/admin/test/:testId', verifyToken, testController.deleteTest);
+
+// //define route for get all test results
+// router.get('/admin/test/result', verifyToken, testController.getAllTestResults);
+
+// //define route for get test result by testResultId
+// router.get('/admin/test/result/:testResultId', verifyToken, testController.getTestResult);
+
+// TEST
+
+//define route for get all test results by userId
+router.get('/test/result/:userId', verifyToken, validateGetAllTestResult, testController.getAllTestResults);
+
+//define route for get test result by userId and testResultId
+router.get('/test/result/:userId/:testResultId', verifyToken, validateGetTestResult, testController.getTestResultbyId);
+
+//define route for get test by user age
+router.get('/test/:userId', verifyToken, testController.getAllTestByAge);
+
+//define route for start test
+router.get('/test/:userId/:testId', verifyToken, testController.startTest);
 
 //define route for submit answers
-router.post('/admin/submit-answers', verifyToken, validateSubmitAnswers, testController.submitAnswers);
-
-//define route for get test result
-router.get('/admin/test-result/:userId/:testId', verifyToken, validateGetTestResult, testController.getTestResult);
+router.post('/test/submit', verifyToken, validateSubmitAnswers, testController.submitAnswers);
 
 //export router
 module.exports = router

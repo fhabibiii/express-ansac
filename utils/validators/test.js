@@ -171,7 +171,8 @@ const validateSubmitAnswers = [
     body('answers.*.value')
         .notEmpty().withMessage('Value is required')
         .isInt().withMessage('Value must be an integer')
-        .toInt(),
+        .toInt()
+        .isIn([0, 1, 2]).withMessage('Value must be 0, 1, or 2'),
 ];
 
 const validateGetTestResult = [
@@ -179,10 +180,28 @@ const validateGetTestResult = [
         .notEmpty().withMessage('User ID is required')
         .isInt().withMessage('User ID must be an integer')
         .toInt(),
+    param('testResultId')
+        .notEmpty().withMessage('Test Result ID is required')
+        .isInt().withMessage('Test Result ID must be an integer')
+        .toInt(),
+];
+
+const validateGetAllTestResult = [
+    param('userId')
+        .notEmpty().withMessage('User ID is required')
+        .isInt().withMessage('User ID must be an integer')
+        .toInt(),
+];
+
+const validateAcceptTest = [
     param('testId')
         .notEmpty().withMessage('Test ID is required')
         .isInt().withMessage('Test ID must be an integer')
         .toInt(),
+    body('status')
+        .notEmpty().withMessage('Status is required')
+        .isString().withMessage('Status must be a string')
+        .isIn(['APPROVED', 'REJECTED']).withMessage('Status must be either APPROVED or REJECTED'),
 ];
 
 module.exports = {
@@ -192,4 +211,6 @@ module.exports = {
     validateSaveQuestionOrder,
     validateSubmitAnswers,
     validateGetTestResult,
+    validateGetAllTestResult,
+    validateAcceptTest,
 };

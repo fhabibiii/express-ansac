@@ -423,6 +423,71 @@ const deleteAccount = async (req, res) => {
     }
 };
 
+//function acceptTest
+const acceptTest = async (req, res) => {
+    // Periksa hasil validasi
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Jika ada error, kembalikan error ke pengguna
+        return res.status(422).json({
+            success: false,
+            message: "Validation error",
+            errors: errors.array(),
+        });
+    }
+
+    try {
+        // Cari user berdasarkan req.userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId,
+            },
+        });
+
+        // Periksa apakah user memiliki role SUPERADMIN
+        if (user.role !== 'SUPERADMIN') {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
+
+        const { testId } = req.params;
+        const { status } = req.body;
+
+        // Periksa apakah testId tersedia
+        const test = await prisma.test.findUnique({
+            where: { id: parseInt(testId) }
+        });
+
+        if (!test) {
+            return res.status(404).json({
+                success: false,
+                message: "Test ID not found",
+            });
+        }
+
+        // Update status test
+        const updatedTest = await prisma.test.update({
+            where: { id: parseInt(testId) },
+            data: { status }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Test status updated to ${status}`,
+            data: updatedTest
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
 module.exports = { 
     createAccount,
     updateAccount,
@@ -430,5 +495,6 @@ module.exports = {
     findAccountById,
     findAdmins,
     findUsers,
-    findSuperAdmins  
+    findSuperAdmins,
+    acceptTest  
 };
