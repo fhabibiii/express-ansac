@@ -185,6 +185,14 @@ const createAccount = async (req, res) => {
                 dateOfBirth: new Date(req.body.dateOfBirth),
                 role: req.body.role,
             },
+            select: {
+                username: true,
+                name: true,
+                email: true,
+                phoneNumber: true,
+                dateOfBirth: true,
+                role: true,
+            },
         });
 
         // Return response json
@@ -240,9 +248,9 @@ const findAccountById = async (req, res) => {
                 username: true,
                 name: true,
                 email: true,
-                role: true,
                 phoneNumber: true,
                 dateOfBirth: true,
+                role: true,
             },
         });
 
@@ -343,6 +351,15 @@ const updateAccount = async (req, res) => {
                 phoneNumber: req.body.phoneNumber || existingUser.phoneNumber,
                 dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : existingUser.dateOfBirth,
                 role: req.body.role || existingUser.role,
+            },
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                email: true,
+                phoneNumber: true,
+                dateOfBirth: true,
+                role: true,
             },
         });
 
@@ -471,7 +488,17 @@ const acceptTest = async (req, res) => {
         // Update status test
         const updatedTest = await prisma.test.update({
             where: { id: parseInt(testId) },
-            data: { status }
+            data: { status },
+            select: {
+                id: true,
+                title: true,
+                shortDesc: true,
+                longDesc: true,
+                minAge: true,
+                maxAge: true,
+                target: true,
+                status: true,
+            },
         });
 
         res.status(200).json({

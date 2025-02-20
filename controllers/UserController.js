@@ -35,9 +35,9 @@ const findAccountById = async (req, res) => {
                 username: true,
                 name: true,
                 email: true,
-                role: true,
                 phoneNumber: true,
                 dateOfBirth: true,
+                role: true,
             },
         });
 
@@ -131,6 +131,15 @@ const updateAccount = async (req, res) => {
                 phoneNumber: req.body.phoneNumber || existingUser.phoneNumber,
                 dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : existingUser.dateOfBirth,
                 role: req.body.role || existingUser.role,
+            },
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                email: true,
+                phoneNumber: true,
+                dateOfBirth: true,
+                role: true,
             },
         });
 

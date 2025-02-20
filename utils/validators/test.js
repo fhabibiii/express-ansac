@@ -68,7 +68,7 @@ const validateEditTest = [
             return true;
         }),
     body('target')
-        .optional()
+        .optional({ checkFalsy: true })
         .isString().withMessage('Target must be a string')
         .isIn(['SELF', 'PARENT']).withMessage('Target must be either SELF or PARENT'),
     body('status')
@@ -394,6 +394,13 @@ const validateGetTestResultAdmin = [
         .toInt(),
 ];
 
+const validateGetAllTestResultByTestId = [
+    param('testId')
+        .notEmpty().withMessage('Test ID is required')
+        .isInt().withMessage('Test ID must be an integer')
+        .toInt(),
+];
+
 module.exports = {
     validateCreateTest,
     validateCreateSubskala,
@@ -411,4 +418,5 @@ module.exports = {
     validateEditTest,
     validateEditSubskala,
     validateEditQuestion,
+    validateGetAllTestResultByTestId,
 };

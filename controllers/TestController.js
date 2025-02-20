@@ -48,7 +48,17 @@ const createTest = async (req, res) => {
                 minAge,
                 maxAge,
                 target
-            }
+            },
+            select: {
+                id: true,
+                title: true,
+                shortDesc: true,
+                longDesc: true,
+                minAge: true,
+                maxAge: true,
+                target: true,
+                status: true,
+            },
         });
 
         res.status(201).json({
@@ -318,7 +328,17 @@ const getAllTest = async (req, res) => {
                     status: {
                         in: ['PENDING', 'REJECTED']
                     }
-                }
+                },
+                select: {
+                    id: true,
+                    title: true,
+                    shortDesc: true,
+                    longDesc: true,
+                    minAge: true,
+                    maxAge: true,
+                    target: true,
+                    status: true,
+                },
             });
 
             return res.status(200).json({
@@ -398,6 +418,14 @@ const getTestById = async (req, res) => {
             });
         }
 
+        // Jika user adalah ADMIN, pastikan hanya bisa mengakses status PENDING atau REJECTED
+        if (user.role === "ADMIN" && !["PENDING", "REJECTED"].includes(test.status)) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied for this test",
+            });
+        }
+
         res.status(200).json({
             success: true,
             data: {
@@ -465,6 +493,14 @@ const getAllSubskalaByTestId = async (req, res) => {
             });
         }
 
+        // Jika user adalah ADMIN, pastikan hanya bisa mengakses subskala dari test yang statusnya bukan APPROVED
+        if (user.role === "ADMIN" && test.status === "APPROVED") {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied for this test status",
+            });
+        }
+
         if (!test.subskala.length) {
             return res.status(404).json({
                 success: false,
@@ -520,13 +556,24 @@ const getAllQuestionBySubskalaId = async (req, res) => {
         // Periksa apakah subskalaId tersedia
         const subskala = await prisma.subskala.findUnique({
             where: { id: parseInt(subskalaId) },
-            include: { questions: true }
+            include: { 
+                questions: true,
+                test: true,
+            }
         });
 
         if (!subskala) {
             return res.status(404).json({
                 success: false,
                 message: "Subskala ID not found",
+            });
+        }
+
+        // Jika user adalah ADMIN, pastikan subskala tidak berada pada test berstatus APPROVED
+        if (user.role === "ADMIN" && subskala.test.status === "APPROVED") {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied for this question",
             });
         }
 
@@ -540,67 +587,6 @@ const getAllQuestionBySubskalaId = async (req, res) => {
         res.status(200).json({
             success: true,
             data: subskala.questions
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-            error: error.message
-        });
-    }
-};
-
-// Get All User Test Results
-const getAllUserTestResults = async (req, res) => {
-    try {
-        // Cari user berdasarkan req.userId
-        const user = await prisma.user.findUnique({
-            where: {
-                id: req.userId,
-            },
-        });
-
-        // Periksa apakah user memiliki role ADMIN atau SUPERADMIN
-        if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
-            return res.status(403).json({
-                success: false,
-                message: "Access denied",
-            });
-        }
-
-        const testResults = await prisma.testResult.findMany({
-            include: {
-                subskalaResults: {
-                    include: {
-                        subskala: true
-                    }
-                },
-                test: true,
-                user: true
-            }
-        });
-
-        if (!testResults.length) {
-            return res.status(404).json({
-                success: false,
-                message: "No test results found."
-            });
-        }
-
-        const formattedResults = testResults.map(testResult => ({
-            testResultId: testResult.id,
-            testId: testResult.testId,
-            title: testResult.test.title,
-            createdAt: testResult.createdAt,
-            userId: testResult.userId,
-            userName: testResult.user.name,
-            userEmail: testResult.user.email
-        }));
-
-        res.status(200).json({
-            success: true,
-            message: "Get all user test results success.",
-            data: formattedResults
         });
     } catch (error) {
         res.status(500).json({
@@ -753,7 +739,7 @@ const editTest = async (req, res) => {
         }
 
         // Periksa apakah status test bukan APPROVED
-        if (test.status === 'APPROVED') {
+        if (user.role === 'ADMIN' && test.status === 'APPROVED') {
             return res.status(403).json({
                 success: false,
                 message: "Cannot edit an approved test",
@@ -834,7 +820,7 @@ const editSubskala = async (req, res) => {
         }
 
         // Periksa apakah status test bukan APPROVED
-        if (subskala.test.status === 'APPROVED') {
+        if (user.role === 'ADMIN' && subskala.test.status === 'APPROVED') {
             return res.status(403).json({
                 success: false,
                 message: "Cannot edit subskala of an approved test",
@@ -919,7 +905,7 @@ const editQuestion = async (req, res) => {
         }
 
         // Periksa apakah status test bukan APPROVED
-        if (question.subskala.test.status === 'APPROVED') {
+        if (user.role === 'ADMIN' && question.subskala.test.status === 'APPROVED') {
             return res.status(403).json({
                 success: false,
                 message: "Cannot edit question of an approved test",
@@ -941,6 +927,112 @@ const editQuestion = async (req, res) => {
             success: true,
             message: "Question updated successfully",
             data: updatedQuestion
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+// Get All Test Results by Test ID
+const getAllTestResultsByTestId = async (req, res) => {
+    // Periksa hasil validasi
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Jika ada error, kembalikan error ke pengguna
+        return res.status(422).json({
+            success: false,
+            message: "Validation error",
+            errors: errors.array(),
+        });
+    }
+
+    try {
+        // Cari user berdasarkan req.userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.userId,
+            },
+        });
+
+        // Periksa apakah user memiliki role ADMIN atau SUPERADMIN
+        if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
+
+        const { testId } = req.params;
+
+        // Periksa apakah testId tersedia
+        const test = await prisma.test.findUnique({
+            where: { id: parseInt(testId) }
+        });
+
+        if (!test) {
+            return res.status(404).json({
+                success: false,
+                message: "Test ID not found",
+            });
+        }
+
+        const testResults = await prisma.testResult.findMany({
+            where: { testId: parseInt(testId) },
+            include: {
+                user: true,
+                subskalaResults: {
+                    include: {
+                        subskala: true
+                    }
+                }
+            }
+        });
+
+        if (!testResults.length) {
+            return res.status(404).json({
+                success: false,
+                message: "No test results found for this test ID",
+            });
+        }
+
+        const formattedResults = testResults.map(testResult => ({
+            id: testResult.id,
+            userId: testResult.userId,
+            testId: testResult.testId,
+            createdAt: testResult.createdAt,
+            user: {
+                name: testResult.user.name,
+                email: testResult.user.email,
+                phoneNumber: testResult.user.phoneNumber
+            },
+            subskalaResults: testResult.subskalaResults.map(result => {
+                let category;
+                if (result.score >= result.subskala.minValue3) {
+                    category = result.subskala.label3;
+                } else if (result.score >= result.subskala.minValue2) {
+                    category = result.subskala.label2;
+                } else {
+                    category = result.subskala.label1;
+                }
+                return {
+                    name: result.subskala.name,
+                    score: result.score,
+                    category,
+                    description: category === result.subskala.label3 ? result.subskala.description3 :
+                                 category === result.subskala.label2 ? result.subskala.description2 :
+                                 result.subskala.description1
+                };
+            })
+        }));
+
+        res.status(200).json({
+            success: true,
+            data: formattedResults
         });
     } catch (error) {
         res.status(500).json({
@@ -1003,6 +1095,13 @@ const submitAnswers = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: "Test ID not found",
+            });
+        }
+
+        if (testExists.status !== "APPROVED") {
+            return res.status(403).json({
+                success: false,
+                message: "You can only submit answers for approved tests",
             });
         }
 
@@ -1250,7 +1349,15 @@ const getAllTestByAge = async (req, res) => {
                 minAge: { lte: age },
                 maxAge: { gte: age },
                 target: user.role === 'USER_SELF' ? 'SELF' : 'PARENT'
-            }
+            },
+            select: {
+                id: true,
+                title: true,
+                shortDesc: true,
+                longDesc: true,
+                minAge: true,
+                maxAge: true,
+            },
         });
 
         if (!tests.length) {
@@ -1400,8 +1507,8 @@ module.exports = {
     getTestById,
     getAllSubskalaByTestId,
     getAllQuestionBySubskalaId,
-    getAllUserTestResults,
     getTestResultAdmin,
+    getAllTestResultsByTestId,
     editTest,
     editSubskala,
     editQuestion,

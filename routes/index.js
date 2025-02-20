@@ -117,8 +117,8 @@ router.put('/admin/subskala/:subskalaId', verifyToken, testValidators.validateEd
 //define route for edit question
 router.put('/admin/question/:questionId', verifyToken, testValidators.validateEditQuestion, testController.editQuestion);
 
-//define route for get all test results
-router.get('/admin/test/result', verifyToken, testController.getAllUserTestResults);
+//define route for get all test results by testId
+router.get('/admin/test/results/:testId', verifyToken, testValidators.validateGetAllTestResultByTestId, testController.getAllTestResultsByTestId);
 
 //define route for get test result by testResultId
 router.get('/admin/test/result/:testResultId', verifyToken, testValidators.validateGetTestResultAdmin, testController.getTestResultAdmin);
