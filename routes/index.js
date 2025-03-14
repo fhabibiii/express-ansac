@@ -162,7 +162,9 @@ router.post('/blog/upload-image', verifyToken, upload.single('image'), blogContr
 // Blog CRUD operations
 router.post('/blog', verifyToken, blogValidators.validateCreateBlog, blogController.createBlog);
 router.get('/blog/admin', verifyToken, blogController.getAllBlogs);
+router.get('/blog/user', verifyToken, blogController.getUserBlogs);
 router.get('/blog/public', blogController.getPublicBlogs);
+router.get('/blog/pending', verifyToken, blogController.getAllPendingBlogs); // Move this BEFORE the /:id route
 router.get('/blog/:id', verifyToken, blogValidators.validateBlogId, blogController.getBlogById);
 router.put('/blog/:id', verifyToken, blogValidators.validateUpdateBlog, blogController.updateBlog);
 router.delete('/blog/:id', verifyToken, blogValidators.validateBlogId, blogController.deleteBlog);
