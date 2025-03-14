@@ -19,6 +19,9 @@ const userController = require('../controllers/UserController');
 //import test controller
 const testController = require('../controllers/TestController');
 
+//import blog controller
+const blogController = require('../controllers/BlogController');
+
 //import validate register & login
 const authValidators = require('../utils/validators/auth');
 
@@ -31,11 +34,17 @@ const userValidators = require('../utils/validators/user');
 //import validate test
 const testValidators = require('../utils/validators/test');
 
+//import validate blog
+const blogValidators = require('../utils/validators/blog');
+
 //import auth middleware
 const verifyToken = require('../middlewares/auth');
 
 //import validate check password
 const { validateCheckPassword } = require('../utils/validators/user');
+
+//import file upload middleware
+const upload = require('../middlewares/fileUpload');
 
 // LOGIN & REGISTER
 
@@ -145,6 +154,19 @@ router.get('/test/:userId/:testId', verifyToken, testController.startTest);
 
 //define route for submit answers
 router.post('/test/submit', verifyToken, testValidators.validateSubmitAnswers, testController.submitAnswers);
+
+// BLOG ROUTES
+// Image upload route - must come before blog creation
+router.post('/blog/upload-image', verifyToken, upload.single('image'), blogController.uploadImage);
+
+// Blog CRUD operations
+router.post('/blog', verifyToken, blogValidators.validateCreateBlog, blogController.createBlog);
+router.get('/blog/admin', verifyToken, blogController.getAllBlogs);
+router.get('/blog/public', blogController.getPublicBlogs);
+router.get('/blog/:id', verifyToken, blogValidators.validateBlogId, blogController.getBlogById);
+router.put('/blog/:id', verifyToken, blogValidators.validateUpdateBlog, blogController.updateBlog);
+router.delete('/blog/:id', verifyToken, blogValidators.validateBlogId, blogController.deleteBlog);
+router.put('/blog/:id/status', verifyToken, blogValidators.validateChangeBlogStatus, blogController.changeBlogStatus);
 
 //export router
 module.exports = router

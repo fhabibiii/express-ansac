@@ -1,5 +1,6 @@
 //import express
 const express = require('express')
+const path = require('path')
 
 //import CORS
 const cors = require('cors')
@@ -13,14 +14,22 @@ const router = require('./routes')
 //init app
 const app = express()
 
-//use cors
-app.use(cors())
+// Update your CORS configuration
+app.use(cors({
+    origin: process.env.FRONTEND_URL || '*', // Allow your frontend origin or all origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
 
 //use body parser
 app.use(bodyParser.urlencoded({ extended: false }))
 
 // parse application/json
 app.use(bodyParser.json())
+
+// Serve static files from the 'public' folder
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 //define port
 const port = 3000;
