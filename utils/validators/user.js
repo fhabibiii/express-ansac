@@ -43,9 +43,19 @@ const validateUpdateUser = [
     body('role')
         .optional({ checkFalsy: true })
         .isString().withMessage('Role must be a string')
-        .isIn(['USER_SELF', 'USER_PARENT']).withMessage('Role must be either USER_SELF or USER_PARENT'),
+];
+
+const validateCheckPassword = [
+    body('userId')
+        .notEmpty().withMessage('User ID is required')
+        .isInt().withMessage('User ID must be an integer')
+        .toInt(),
+    body('oldPassword')
+        .notEmpty().withMessage('Old password is required')
+        .isString().withMessage('Old password must be a string'),
 ];
 
 module.exports = {
     validateUpdateUser,
+    validateCheckPassword,
 };

@@ -34,6 +34,9 @@ const testValidators = require('../utils/validators/test');
 //import auth middleware
 const verifyToken = require('../middlewares/auth');
 
+//import validate check password
+const { validateCheckPassword } = require('../utils/validators/user');
+
 // LOGIN & REGISTER
 
 //define route for register
@@ -81,6 +84,9 @@ router.put('/user/account/:id', verifyToken, userValidators.validateUpdateUser, 
 
 //define route for delete user account
 router.delete('/user/account/:id', verifyToken, userController.deleteAccount);
+
+//define route for check password
+router.post('/check-password', verifyToken, validateCheckPassword, userController.checkPassword);
 
 // ADMIN
 

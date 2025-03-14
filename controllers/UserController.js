@@ -213,8 +213,63 @@ const deleteAccount = async (req, res) => {
     }
 };
 
+const checkPassword = async (req, res) => {
+    // Periksa hasil validasi
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // Jika ada error, kembalikan error ke pengguna
+        return res.status(422).json({
+            success: false,
+            message: "Validation error",
+            errors: errors.array(),
+        });
+    }
+
+    const { userId, oldPassword } = req.body;
+
+    try {
+        // Cari user berdasarkan userId
+        const user = await prisma.user.findUnique({
+            where: {
+                id: Number(userId),
+            },
+        });
+
+        // Jika user tidak ditemukan
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        // Periksa password
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        // Jika password tidak cocok
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid password",
+            });
+        }
+
+        // Kembalikan respons sukses
+        res.status(200).json({
+            success: true,
+            message: "Password is correct",
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
 module.exports = { 
     updateAccount,
     deleteAccount,
     findAccountById,
+    checkPassword,
 };
