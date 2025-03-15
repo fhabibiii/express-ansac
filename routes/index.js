@@ -156,8 +156,13 @@ router.get('/test/:userId/:testId', verifyToken, testController.startTest);
 router.post('/test/submit', verifyToken, testValidators.validateSubmitAnswers, testController.submitAnswers);
 
 // BLOG ROUTES
-// Image upload route - must come before blog creation
-router.post('/blog/upload-image', verifyToken, upload.single('image'), blogController.uploadImage);
+// Image upload route
+router.post(
+    '/blog/upload-image', 
+    verifyToken, 
+    ...upload.single('image'), // Spread the array of middleware
+    blogController.uploadImage
+);
 
 // Blog CRUD operations
 router.post('/blog', verifyToken, blogValidators.validateCreateBlog, blogController.createBlog);

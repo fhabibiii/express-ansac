@@ -322,6 +322,13 @@ const updateBlog = async (req, res) => {
     }
 };
 
+// Extract filename from imageUrl (cross-platform version)
+const extractFilename = (imageUrl) => {
+    // This handles both URLs with / and Windows paths with \
+    const parts = imageUrl.split(/[\/\\]/);
+    return parts[parts.length - 1];
+};
+
 // Update the deleteBlog function to also delete the image file
 const deleteBlog = async (req, res) => {
     try {
@@ -373,7 +380,7 @@ const deleteBlog = async (req, res) => {
         // Extract filename from imageUrl
         // Example imageUrl: http://localhost:3000/uploads/image-123456789.jpg
         const imageUrl = existingBlog.imageUrl;
-        const filename = imageUrl.split('/').pop(); // Gets the last part after "/"
+        const filename = extractFilename(existingBlog.imageUrl);
         
         // Construct the file path
         const filePath = path.join(__dirname, '../public/uploads', filename);
@@ -523,19 +530,35 @@ const uploadImage = async (req, res) => {
         }
 
         // Use absolute URL instead of relative path
-        // This assumes you have a BASE_URL environment variable or configuration
-        const baseUrl = process.env.BASE_URL || 'http://localhost:3000'; // Replace with your actual backend URL
+        const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
         const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
+
+        // Get info about optimized file (with error handling)
+        let fileSizeInMB = "unknown";
+        try {
+            const fs = require('fs');
+            if (fs.existsSync(req.file.path)) {
+                const fileSizeInBytes = fs.statSync(req.file.path).size;
+                fileSizeInMB = (fileSizeInBytes / (1024 * 1024)).toFixed(2);
+            }
+        } catch (error) {
+            console.error("Error getting file size:", error);
+        }
 
         res.status(200).json({
             success: true,
-            message: "Image uploaded successfully",
-            data: { imageUrl }
+            message: "Image uploaded and optimized successfully",
+            data: { 
+                imageUrl,
+                format: 'webp', 
+                size: `${fileSizeInMB}MB`
+            }
         });
     } catch (error) {
+        console.error("Upload error:", error);
         res.status(500).json({
             success: false,
-            message: "Internal server error",
+            message: "Internal server error during file upload",
             error: error.message
         });
     }
