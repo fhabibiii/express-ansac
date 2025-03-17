@@ -164,3 +164,28 @@ model QuestionOrder {
   test        Test     @relation(fields: [testId], references: [id])
   question    Question @relation(fields: [questionId], references: [id])
 }
+
+// FAQ model for accordion-style frequently asked questions
+model Faq {
+  id          Int        @id @default(autoincrement())
+  question    String     @db.Text
+  status      BlogStatus @default(PENDING)
+  order       Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  answers     FaqAnswer[]
+
+  @@index([status])
+}
+
+model FaqAnswer {
+  id          Int      @id @default(autoincrement())
+  content     String   @db.Text
+  faqId       Int
+  faq         Faq      @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  order       Int      @default(0)  // To control answer display order
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([faqId])
+}

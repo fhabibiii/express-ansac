@@ -52,6 +52,12 @@ const upload = require('../middlewares/fileUpload');
 // Add this with your other imports
 const galleryValidators = require('../utils/validators/gallery');
 
+// Import FAQ validators
+const faqValidators = require('../utils/validators/faq');
+
+// Import FAQ controller
+const faqController = require('../controllers/FAQController');
+
 // LOGIN & REGISTER
 
 //define route for register
@@ -205,6 +211,22 @@ router.put('/gallery/:id/status', verifyToken, galleryValidators.validateChangeG
 // Gallery image operations
 router.put('/gallery/:galleryId/thumbnail/:imageId', verifyToken, galleryValidators.validateGalleryImageIds, galleryController.setThumbnail);
 router.delete('/gallery/:galleryId/image/:imageId', verifyToken, galleryValidators.validateGalleryImageIds, galleryController.deleteImage);
+
+// FAQ routes
+router.post('/faq', verifyToken, faqValidators.validateCreateFAQ, faqController.createFAQ);
+router.post('/faq/answer', verifyToken, faqValidators.validateCreateFAQAnswer, faqController.createFAQAnswer);
+router.get('/faq/admin', verifyToken, faqController.getAllFAQ);
+router.get('/faq/answer/:faqId', verifyToken, faqValidators.validateFAQId, faqController.getAllFAQAnswer);
+router.get('/faq/pending', verifyToken, faqController.getAllPendingFAQ);
+router.get('/faq/:id', verifyToken, faqValidators.validateFAQId, faqController.getFAQById);
+router.put('/faq/:id', verifyToken, faqValidators.validateUpdateFAQ, faqController.updateFAQ);
+router.put('/faq/answer/:id', verifyToken, faqValidators.validateUpdateFAQAnswer, faqController.updateFAQAnswer);
+router.delete('/faq/:id', verifyToken, faqValidators.validateFAQId, faqController.deleteFAQ);
+router.delete('/faq/answer/:id', verifyToken, faqValidators.validateFAQAnswerId, faqController.deleteFAQAnswer);
+router.put('/faq/:id/status', verifyToken, faqValidators.validateChangeFAQStatus, faqController.changeFAQStatus);
+router.get('/faq/public', faqController.getPublicFAQs);
+router.put('/faq/order', verifyToken, faqValidators.validateUpdateFAQOrder, faqController.updateFAQOrder);
+router.put('/faq/answer/order/:faqId', verifyToken, faqValidators.validateUpdateFAQAnswerOrder, faqController.updateFAQAnswerOrder);
 
 //export router
 module.exports = router

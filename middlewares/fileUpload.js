@@ -43,11 +43,29 @@ fs.readdir(tempDir, (err, files) => {
     
     if (files.length > 0) {
         console.log(`Found ${files.length} leftover temp files from previous runs, cleaning up`);
+        
+        // Try multiple deletion strategies on startup
         files.forEach(file => {
+            const filePath = path.join(tempDir, file);
+            
             try {
-                fs.unlinkSync(path.join(tempDir, file));
-            } catch (error) {
-                console.error(`Could not delete ${file}: ${error.message}`);
+                // Try direct deletion first
+                fs.unlinkSync(filePath);
+                console.log(`Startup cleanup: deleted ${file}`);
+            } catch (err1) {
+                try {
+                    // On Windows, try an alternative method by renaming first
+                    if (process.platform === 'win32') {
+                        const tempName = path.join(tempDir, `__temp_${Date.now()}`);
+                        fs.renameSync(filePath, tempName);
+                        fs.unlinkSync(tempName);
+                        console.log(`Startup cleanup: deleted ${file} using rename strategy`);
+                    } else {
+                        throw err1;
+                    }
+                } catch (err2) {
+                    console.error(`Startup cleanup: could not delete ${file}: ${err2.message}`);
+                }
             }
         });
     }
@@ -107,11 +125,11 @@ if (process.platform === 'win32') {
         const fileIds = Object.keys(global.tempFilesToDelete);
         if (fileIds.length === 0) return;
         
-        console.log(`Attempting to clean up ${fileIds.length} pending files...`);
+        console.log(`Checking ${fileIds.length} pending files...`);
         for (const fileId of fileIds) {
             const fileInfo = global.tempFilesToDelete[fileId];
             
-            // Check if file exists before attempting to delete
+            // Skip if file doesn't exist
             if (!fs.existsSync(fileInfo.path)) {
                 delete global.tempFilesToDelete[fileId];
                 continue;
@@ -119,29 +137,37 @@ if (process.platform === 'win32') {
             
             // Try to delete the file
             try {
-                // Force garbage collection if available (helps release file handles)
-                if (global.gc) {
-                    global.gc();
-                }
-                
+                if (global.gc) global.gc();
                 fs.unlinkSync(fileInfo.path);
                 console.log(`Successfully deleted: ${fileInfo.path}`);
                 delete global.tempFilesToDelete[fileId];
             } catch (err) {
-                // If this is a JPEG file, we need to be more patient
+                // Check if it's a JPEG file
                 const isJpegFile = /\.(jpg|jpeg)$/i.test(fileInfo.path);
+                
+                // For JPEG files, only try a few times then stop retrying
                 if (isJpegFile) {
-                    // Update next attempt time with longer delay for JPEGs
                     fileInfo.attempts++;
-                    // Use a longer delay for JPEGs (2 minutes * attempt count)
-                    const delayMs = 120000 * fileInfo.attempts;
+                    
+                    // Only retry JPEGs 3 times max, then log and stop trying
+                    if (fileInfo.attempts >= 3) {
+                        console.log(`Giving up on locked JPEG file after ${fileInfo.attempts} attempts: ${fileInfo.path}`);
+                        delete global.tempFilesToDelete[fileId];
+                    } else {
+                        // Still within retry limit
+                        const delayMs = 5 * 60 * 1000; // Fixed 5 minute delay between attempts
+                        fileInfo.nextAttempt = Date.now() + delayMs;
+                        console.log(`JPEG file locked, attempt ${fileInfo.attempts}/3, will retry in 5 minutes: ${fileInfo.path}`);
+                    }
+                } else {
+                    // For non-JPEG files, continue with existing strategy
+                    fileInfo.attempts++;
+                    const delayMs = Math.min(5 * 60 * 1000 * fileInfo.attempts, 30 * 60 * 1000);
                     fileInfo.nextAttempt = Date.now() + delayMs;
-                    console.log(`JPEG file locked, will retry in ${delayMs/60000} minutes: ${fileInfo.path}`);
                 }
-                // Keep in queue for next attempt
             }
         }
-    }, 2 * 60 * 1000); // Check every 2 minutes
+    }, 5 * 60 * 1000); // Check every 5 minutes
 }
 
 // Middleware that processes the uploaded image with Sharp
@@ -255,5 +281,34 @@ if (process.platform !== 'win32') {
         });
     }, 30 * 60 * 1000); // Every 30 minutes
 }
+
+// Add this to clean up on server shutdown
+process.on('SIGINT', function() {
+    console.log('Server shutting down, performing final cleanup...');
+    
+    try {
+        // Aggressive cleanup of temp directory
+        if (fs.existsSync(tempDir)) {
+            const files = fs.readdirSync(tempDir);
+            
+            for (const file of files) {
+                try {
+                    const filePath = path.join(tempDir, file);
+                    fs.unlinkSync(filePath);
+                    console.log(`Shutdown cleanup: deleted ${filePath}`);
+                } catch (err) {
+                    console.log(`Shutdown cleanup: could not delete ${file}: ${err.message}`);
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Error during shutdown cleanup:", err);
+    }
+    
+    // Wait briefly to allow cleanup to finish
+    setTimeout(() => {
+        process.exit(0);
+    }, 500);
+});
 
 module.exports = upload;
