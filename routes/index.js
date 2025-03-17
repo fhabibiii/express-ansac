@@ -22,6 +22,9 @@ const testController = require('../controllers/TestController');
 //import blog controller
 const blogController = require('../controllers/BlogController');
 
+//import gallery controller
+const galleryController = require('../controllers/GalleryController');
+
 //import validate register & login
 const authValidators = require('../utils/validators/auth');
 
@@ -45,6 +48,9 @@ const { validateCheckPassword } = require('../utils/validators/user');
 
 //import file upload middleware
 const upload = require('../middlewares/fileUpload');
+
+// Add this with your other imports
+const galleryValidators = require('../utils/validators/gallery');
 
 // LOGIN & REGISTER
 
@@ -174,6 +180,31 @@ router.get('/blog/:id', verifyToken, blogValidators.validateBlogId, blogControll
 router.put('/blog/:id', verifyToken, blogValidators.validateUpdateBlog, blogController.updateBlog);
 router.delete('/blog/:id', verifyToken, blogValidators.validateBlogId, blogController.deleteBlog);
 router.put('/blog/:id/status', verifyToken, blogValidators.validateChangeBlogStatus, blogController.changeBlogStatus);
+
+// GALLERY ROUTES
+// Image upload route
+router.post(
+    '/gallery/upload-image', 
+    verifyToken, 
+    ...upload.single('image'), // Reuse the same upload middleware
+    galleryValidators.validateUploadImage,
+    galleryController.uploadImage
+);
+
+// Gallery CRUD operations
+router.post('/gallery', verifyToken, galleryValidators.validateCreateGallery, galleryController.createGallery);
+router.get('/gallery/admin', verifyToken, galleryController.getAllGallerys);
+router.get('/gallery/user', verifyToken, galleryController.getUserGallerys);
+router.get('/gallery/public', galleryController.getPublicGallerys);
+router.get('/gallery/pending', verifyToken, galleryController.getAllPendingGallerys); 
+router.get('/gallery/:id', verifyToken, galleryValidators.validateGalleryId, galleryController.getGalleryById);
+router.put('/gallery/:id', verifyToken, galleryValidators.validateUpdateGallery, galleryController.updateGallery);
+router.delete('/gallery/:id', verifyToken, galleryValidators.validateGalleryId, galleryController.deleteGallery);
+router.put('/gallery/:id/status', verifyToken, galleryValidators.validateChangeGalleryStatus, galleryController.changeGalleryStatus);
+
+// Gallery image operations
+router.put('/gallery/:galleryId/thumbnail/:imageId', verifyToken, galleryValidators.validateGalleryImageIds, galleryController.setThumbnail);
+router.delete('/gallery/:galleryId/image/:imageId', verifyToken, galleryValidators.validateGalleryImageIds, galleryController.deleteImage);
 
 //export router
 module.exports = router

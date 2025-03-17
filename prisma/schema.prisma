@@ -42,6 +42,7 @@ model User {
   updatedAt   DateTime  @updatedAt
   testResults TestResult[]
   blogs       Blog[]    // Add relation to blogs
+  galleries   Gallery[] // Add relation to galleries
 }
 
 // Add the Blog model
@@ -55,6 +56,31 @@ model Blog {
   status      BlogStatus @default(PENDING)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+}
+
+// Gallery model - similar to Blog but without content field
+model Gallery {
+  id          Int            @id @default(autoincrement())
+  title       String         @db.VarChar(255)
+  createdBy   Int
+  author      User           @relation(fields: [createdBy], references: [id])
+  status      BlogStatus     @default(PENDING) // Reusing BlogStatus enum
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  images      GalleryImage[]
+}
+
+// GalleryImage model - to store multiple images for each gallery
+model GalleryImage {
+  id          Int      @id @default(autoincrement())
+  imageUrl    String   @db.Text
+  galleryId   Int
+  gallery     Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  isThumbnail Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([galleryId])
 }
 
 model Test {
