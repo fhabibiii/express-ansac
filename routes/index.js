@@ -212,9 +212,10 @@ router.put('/gallery/:id/status', verifyToken, galleryValidators.validateChangeG
 router.put('/gallery/:galleryId/thumbnail/:imageId', verifyToken, galleryValidators.validateGalleryImageIds, galleryController.setThumbnail);
 router.delete('/gallery/:galleryId/image/:imageId', verifyToken, galleryValidators.validateGalleryImageIds, galleryController.deleteImage);
 
-// FAQ routes
+// FAQ routes with fixes
 router.post('/faq', verifyToken, faqValidators.validateCreateFAQ, faqController.createFAQ);
 router.post('/faq/answer', verifyToken, faqValidators.validateCreateFAQAnswer, faqController.createFAQAnswer);
+router.get('/faq-public', faqController.getPublicFAQs); // Changed route to avoid conflicts
 router.get('/faq/admin', verifyToken, faqController.getAllFAQ);
 router.get('/faq/answer/:faqId', verifyToken, faqValidators.validateFAQId, faqController.getAllFAQAnswer);
 router.get('/faq/pending', verifyToken, faqController.getAllPendingFAQ);
@@ -224,8 +225,7 @@ router.put('/faq/answer/:id', verifyToken, faqValidators.validateUpdateFAQAnswer
 router.delete('/faq/:id', verifyToken, faqValidators.validateFAQId, faqController.deleteFAQ);
 router.delete('/faq/answer/:id', verifyToken, faqValidators.validateFAQAnswerId, faqController.deleteFAQAnswer);
 router.put('/faq/:id/status', verifyToken, faqValidators.validateChangeFAQStatus, faqController.changeFAQStatus);
-router.get('/faq/public', faqController.getPublicFAQs);
-router.put('/faq/order', verifyToken, faqValidators.validateUpdateFAQOrder, faqController.updateFAQOrder);
+router.put('/faq-order', verifyToken, faqValidators.validateUpdateFAQOrder, faqController.updateFAQOrder); // Changed route to avoid conflicts
 router.put('/faq/answer/order/:faqId', verifyToken, faqValidators.validateUpdateFAQAnswerOrder, faqController.updateFAQAnswerOrder);
 
 //export router

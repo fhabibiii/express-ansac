@@ -2,7 +2,7 @@ const express = require("express");
 const { validationResult } = require("express-validator");
 const prisma = require("../prisma/client");
 
-// Create a new FAQ
+// Update createFAQ function to set order automatically
 const createFAQ = async (req, res) => {
     // Validate request
     const errors = validationResult(req);
@@ -29,11 +29,21 @@ const createFAQ = async (req, res) => {
 
         const { question } = req.body;
         
-        // Create FAQ
+        // Find the current maximum order value
+        const maxOrderFaq = await prisma.faq.findFirst({
+            orderBy: {
+                order: 'desc'
+            }
+        });
+        
+        const newOrder = maxOrderFaq ? maxOrderFaq.order + 1 : 0;
+        
+        // Create FAQ with the new order
         const faq = await prisma.faq.create({
             data: {
                 question,
-                status: "PENDING" // Default status
+                status: "PENDING",
+                order: newOrder
             }
         });
 
@@ -51,7 +61,7 @@ const createFAQ = async (req, res) => {
     }
 };
 
-// Create an answer for an FAQ
+// Update createFAQAnswer function to set order automatically
 const createFAQAnswer = async (req, res) => {
     // Validate request
     const errors = validationResult(req);
@@ -90,11 +100,22 @@ const createFAQAnswer = async (req, res) => {
             });
         }
         
-        // Create answer
+        // Find the current maximum order value for this FAQ
+        const maxOrderAnswer = await prisma.faqAnswer.findFirst({
+            where: { faqId: parseInt(faqId) },
+            orderBy: {
+                order: 'desc'
+            }
+        });
+        
+        const newOrder = maxOrderAnswer ? maxOrderAnswer.order + 1 : 0;
+        
+        // Create answer with the new order
         const answer = await prisma.faqAnswer.create({
             data: {
                 faqId: parseInt(faqId),
-                content
+                content,
+                order: newOrder
             }
         });
 
@@ -130,7 +151,12 @@ const getAllFAQ = async (req, res) => {
         // SuperAdmin sees all FAQs (no restrictions)
         const faqs = await prisma.faq.findMany({
             include: {
-                answers: true
+                answers: {
+                    orderBy: [
+                        { order: 'asc' },
+                        { createdAt: 'asc' }
+                    ]
+                }
             },
             orderBy: [
                 { order: 'asc' },
@@ -183,7 +209,10 @@ const getAllFAQAnswer = async (req, res) => {
         // Get all answers for this FAQ
         const answers = await prisma.faqAnswer.findMany({
             where: { faqId: parseInt(faqId) },
-            orderBy: { order: 'asc' }
+            orderBy: [
+                { order: 'asc' },
+                { createdAt: 'asc' }
+            ]
         });
 
         res.status(200).json({
@@ -220,7 +249,12 @@ const getAllPendingFAQ = async (req, res) => {
                 status: 'PENDING'
             },
             include: {
-                answers: true
+                answers: {
+                    orderBy: [
+                        { order: 'asc' },
+                        { createdAt: 'asc' }
+                    ]
+                }
             },
             orderBy: [
                 { order: 'asc' },
@@ -258,7 +292,10 @@ const getFAQById = async (req, res) => {
             where: { id },
             include: {
                 answers: {
-                    orderBy: { order: 'asc' }
+                    orderBy: [
+                        { order: 'asc' },
+                        { createdAt: 'asc' }
+                    ]
                 }
             }
         });
@@ -535,7 +572,7 @@ const deleteFAQ = async (req, res) => {
     }
 };
 
-// Delete FAQ Answer
+// Update deleteFAQAnswer function to reorder remaining answers
 const deleteFAQAnswer = async (req, res) => {
     try {
         const { id } = req.params;
@@ -580,9 +617,27 @@ const deleteFAQAnswer = async (req, res) => {
             });
         }
 
+        // Get the current order of the answer being deleted
+        const deletedOrder = existingAnswer.order;
+        
         // Delete FAQ answer
         await prisma.faqAnswer.delete({
             where: { id: parseInt(id) }
+        });
+        
+        // Update order of remaining answers in the same FAQ
+        await prisma.faqAnswer.updateMany({
+            where: {
+                faqId: existingAnswer.faqId,
+                order: {
+                    gt: deletedOrder
+                }
+            },
+            data: {
+                order: {
+                    decrement: 1
+                }
+            }
         });
 
         res.status(200).json({
@@ -668,7 +723,10 @@ const getPublicFAQs = async (req, res) => {
             },
             include: {
                 answers: {
-                    orderBy: { order: 'asc' }
+                    orderBy: [
+                        { order: 'asc' },
+                        { createdAt: 'asc' }
+                    ]
                 }
             },
             orderBy: [
@@ -690,7 +748,7 @@ const getPublicFAQs = async (req, res) => {
     }
 };
 
-// Update FAQ Order
+// Update FAQ Order with complete validation
 const updateFAQOrder = async (req, res) => {
     // Validate request
     const errors = validationResult(req);
@@ -725,15 +783,41 @@ const updateFAQOrder = async (req, res) => {
             });
         }
 
-        // Update order for each FAQ
-        const updatePromises = orderedFaqs.map((item, index) => {
-            return prisma.faq.update({
-                where: { id: parseInt(item.id) },
-                data: { order: index }
-            });
+        // Get all existing FAQs
+        const existingFaqs = await prisma.faq.findMany({
+            select: { id: true }
         });
+        const existingFaqIds = existingFaqs.map(faq => faq.id);
+        
+        // Convert ordered FAQ IDs to integers for comparison
+        const orderedFaqIds = orderedFaqs.map(item => parseInt(item.id));
+        
+        // Check if all existing FAQs are included
+        const missingFaqIds = existingFaqIds.filter(id => !orderedFaqIds.includes(id));
+        if (missingFaqIds.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Missing FAQ IDs in your request: ${missingFaqIds.join(', ')}`,
+            });
+        }
+        
+        // Check if any non-existent FAQ IDs are included
+        const invalidFaqIds = orderedFaqIds.filter(id => !existingFaqIds.includes(id));
+        if (invalidFaqIds.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid FAQ IDs in your request: ${invalidFaqIds.join(', ')}`,
+            });
+        }
 
-        await Promise.all(updatePromises);
+        // Update order for each FAQ
+        for (let i = 0; i < orderedFaqs.length; i++) {
+            const faqId = parseInt(orderedFaqs[i].id);
+            await prisma.faq.update({
+                where: { id: faqId },
+                data: { order: i }
+            });
+        }
 
         res.status(200).json({
             success: true,
@@ -748,7 +832,7 @@ const updateFAQOrder = async (req, res) => {
     }
 };
 
-// Update FAQ Answer Order
+// Update FAQ Answer Order with complete validation
 const updateFAQAnswerOrder = async (req, res) => {
     // Validate request
     const errors = validationResult(req);
@@ -778,7 +862,8 @@ const updateFAQAnswerOrder = async (req, res) => {
 
         // Check if FAQ exists
         const existingFAQ = await prisma.faq.findUnique({
-            where: { id: parseInt(faqId) }
+            where: { id: parseInt(faqId) },
+            include: { answers: true }
         });
 
         if (!existingFAQ) {
@@ -810,16 +895,39 @@ const updateFAQAnswerOrder = async (req, res) => {
                 message: "orderedAnswers must be an array",
             });
         }
+        
+        // Get all existing answers for this FAQ
+        const existingAnswerIds = existingFAQ.answers.map(answer => answer.id);
+        
+        // Convert ordered answer IDs to integers for comparison
+        const orderedAnswerIds = orderedAnswers.map(item => parseInt(item.id));
+        
+        // Check if all existing answers are included
+        const missingAnswerIds = existingAnswerIds.filter(id => !orderedAnswerIds.includes(id));
+        if (missingAnswerIds.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Missing answer IDs in your request: ${missingAnswerIds.join(', ')}`,
+            });
+        }
+        
+        // Check if any non-existent answer IDs are included
+        const invalidAnswerIds = orderedAnswerIds.filter(id => !existingAnswerIds.includes(id));
+        if (invalidAnswerIds.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid answer IDs in your request or answers that don't belong to this FAQ: ${invalidAnswerIds.join(', ')}`,
+            });
+        }
 
         // Update order for each answer
-        const updatePromises = orderedAnswers.map((item, index) => {
-            return prisma.faqAnswer.update({
-                where: { id: parseInt(item.id) },
-                data: { order: index }
+        for (let i = 0; i < orderedAnswers.length; i++) {
+            const answerId = parseInt(orderedAnswers[i].id);
+            await prisma.faqAnswer.update({
+                where: { id: answerId },
+                data: { order: i }
             });
-        });
-
-        await Promise.all(updatePromises);
+        }
 
         res.status(200).json({
             success: true,
