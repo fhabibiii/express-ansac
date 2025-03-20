@@ -1,6 +1,7 @@
 //import express
 const express = require('express')
 const path = require('path')
+const fs = require('fs')
 
 //import CORS
 const cors = require('cors')
@@ -13,6 +14,13 @@ const router = require('./routes')
 
 //init app
 const app = express()
+
+// Ensure services directory exists
+const servicesDir = path.join(__dirname, 'public/uploads/services');
+if (!fs.existsSync(servicesDir)) {
+    fs.mkdirSync(servicesDir, { recursive: true });
+    console.log(`Created services directory at: ${servicesDir}`);
+}
 
 // Update your CORS configuration
 app.use(cors({

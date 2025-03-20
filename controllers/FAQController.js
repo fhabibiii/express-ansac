@@ -2,7 +2,7 @@ const express = require("express");
 const { validationResult } = require("express-validator");
 const prisma = require("../prisma/client");
 
-// Update createFAQ function to set order automatically
+// Modified createFAQ - no order set for new FAQs
 const createFAQ = async (req, res) => {
     // Validate request
     const errors = validationResult(req);
@@ -29,21 +29,12 @@ const createFAQ = async (req, res) => {
 
         const { question } = req.body;
         
-        // Find the current maximum order value
-        const maxOrderFaq = await prisma.faq.findFirst({
-            orderBy: {
-                order: 'desc'
-            }
-        });
-        
-        const newOrder = maxOrderFaq ? maxOrderFaq.order + 1 : 0;
-        
-        // Create FAQ with the new order
+        // Create FAQ without setting order (only APPROVED FAQs get order)
         const faq = await prisma.faq.create({
             data: {
                 question,
                 status: "PENDING",
-                order: newOrder
+                // No order field - it will use the default 0
             }
         });
 
@@ -133,7 +124,7 @@ const createFAQAnswer = async (req, res) => {
     }
 };
 
-// Get all FAQs (SuperAdmin only)
+// 1. Modified getAllFAQ to only show APPROVED FAQs, similar to getPublicFAQs but for admin access
 const getAllFAQ = async (req, res) => {
     try {
         const user = await prisma.user.findUnique({
@@ -148,8 +139,11 @@ const getAllFAQ = async (req, res) => {
             });
         }
 
-        // SuperAdmin sees all FAQs (no restrictions)
+        // Show only APPROVED FAQs to match getPublicFAQs behavior
         const faqs = await prisma.faq.findMany({
+            where: {
+                status: 'APPROVED'
+            },
             include: {
                 answers: {
                     orderBy: [
@@ -228,7 +222,7 @@ const getAllFAQAnswer = async (req, res) => {
     }
 };
 
-// Get all pending FAQs (SuperAdmin only)
+// 2. Modified getAllPendingFAQ to show both PENDING and REJECTED FAQs
 const getAllPendingFAQ = async (req, res) => {
     try {
         const user = await prisma.user.findUnique({
@@ -243,10 +237,12 @@ const getAllPendingFAQ = async (req, res) => {
             });
         }
 
-        // Get all FAQs with PENDING status
+        // Get all FAQs with PENDING or REJECTED status
         const faqs = await prisma.faq.findMany({
             where: {
-                status: 'PENDING'
+                status: {
+                    in: ['PENDING', 'REJECTED']
+                }
             },
             include: {
                 answers: {
@@ -257,8 +253,7 @@ const getAllPendingFAQ = async (req, res) => {
                 }
             },
             orderBy: [
-                { order: 'asc' },
-                { createdAt: 'desc' }
+                { createdAt: 'desc' } // Order by creation date since these don't have meaningful order values
             ]
         });
 
@@ -336,7 +331,7 @@ const getFAQById = async (req, res) => {
     }
 };
 
-// Update FAQ
+// Modified updateFAQ function
 const updateFAQ = async (req, res) => {
     // Validate request
     const errors = validationResult(req);
@@ -370,8 +365,22 @@ const updateFAQ = async (req, res) => {
         });
 
         // SuperAdmin can edit any FAQ
+        let updateData = {
+            question: question || existingFAQ.question,
+        };
+        
+        let statusChangeMessage = "";
+        
         if (user.role === 'SUPERADMIN') {
-            // Allow editing - no restrictions
+            // SuperAdmin can edit any FAQ, and if it's already APPROVED, keep it APPROVED
+            if (existingFAQ.status !== 'APPROVED') {
+                // Only change to PENDING if not already APPROVED (for SuperAdmin)
+                updateData.status = 'PENDING';
+                
+                // Remove order when changing to PENDING
+                updateData.order = 0;
+                statusChangeMessage = " and status changed to PENDING";
+            }
         }
         // Admin has restrictions
         else if (user.role === 'ADMIN') {
@@ -382,6 +391,15 @@ const updateFAQ = async (req, res) => {
                     message: "Access denied. Cannot edit an approved FAQ.",
                 });
             }
+            
+            // If FAQ was REJECTED, change to PENDING
+            if (existingFAQ.status === 'REJECTED') {
+                updateData.status = 'PENDING';
+                statusChangeMessage = " and status changed to PENDING";
+            }
+            
+            // Remove order since it's not APPROVED anymore
+            updateData.order = 0;
         } 
         // Other roles cannot edit
         else {
@@ -389,16 +407,6 @@ const updateFAQ = async (req, res) => {
                 success: false,
                 message: "Access denied",
             });
-        }
-
-        // Prepare update data
-        const updateData = {
-            question: question || existingFAQ.question,
-        };
-        
-        // If FAQ status is REJECTED, change to PENDING when updated
-        if (existingFAQ.status === 'REJECTED') {
-            updateData.status = 'PENDING';
         }
 
         // Update FAQ
@@ -409,9 +417,7 @@ const updateFAQ = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: existingFAQ.status === 'REJECTED' ? 
-                "FAQ updated successfully and status changed to PENDING" : 
-                "FAQ updated successfully",
+            message: `FAQ updated successfully${statusChangeMessage}`,
             data: updatedFAQ
         });
     } catch (error) {
@@ -423,7 +429,7 @@ const updateFAQ = async (req, res) => {
     }
 };
 
-// Update FAQ Answer
+// Modified updateFAQAnswer function
 const updateFAQAnswer = async (req, res) => {
     // Validate request
     const errors = validationResult(req);
@@ -457,9 +463,12 @@ const updateFAQAnswer = async (req, res) => {
             where: { id: req.userId },
         });
 
+        let statusChangeMessage = "";
+        
         // SuperAdmin can edit any FAQ answer
         if (user.role === 'SUPERADMIN') {
-            // Allow editing - no restrictions
+            // If the FAQ is already APPROVED, SuperAdmin keeps it APPROVED
+            // No need to change status or order
         }
         // Admin has restrictions
         else if (user.role === 'ADMIN') {
@@ -470,20 +479,24 @@ const updateFAQAnswer = async (req, res) => {
                     message: "Access denied. Cannot edit an answer from an approved FAQ.",
                 });
             }
+            
+            // If FAQ was REJECTED, change to PENDING
+            if (existingAnswer.faq.status === 'REJECTED') {
+                await prisma.faq.update({
+                    where: { id: existingAnswer.faqId },
+                    data: { 
+                        status: 'PENDING',
+                        order: 0 // Reset order to 0
+                    }
+                });
+                statusChangeMessage = " and FAQ status changed to PENDING";
+            }
         } 
         // Other roles cannot edit
         else {
             return res.status(403).json({
                 success: false,
                 message: "Access denied",
-            });
-        }
-
-        // If FAQ status is REJECTED, change to PENDING when answer is updated
-        if (existingAnswer.faq.status === 'REJECTED') {
-            await prisma.faq.update({
-                where: { id: existingAnswer.faqId },
-                data: { status: 'PENDING' }
             });
         }
 
@@ -495,9 +508,7 @@ const updateFAQAnswer = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: existingAnswer.faq.status === 'REJECTED' ? 
-                "FAQ answer updated successfully and FAQ status changed to PENDING" : 
-                "FAQ answer updated successfully",
+            message: `FAQ answer updated successfully${statusChangeMessage}`,
             data: updatedAnswer
         });
     } catch (error) {
@@ -509,7 +520,7 @@ const updateFAQAnswer = async (req, res) => {
     }
 };
 
-// Delete FAQ
+// 6. Modified deleteFAQ function to ensure ADMIN can't delete APPROVED FAQs
 const deleteFAQ = async (req, res) => {
     try {
         const { id } = req.params;
@@ -572,7 +583,7 @@ const deleteFAQ = async (req, res) => {
     }
 };
 
-// Update deleteFAQAnswer function to reorder remaining answers
+// 5. Modified deleteFAQAnswer function to ensure ADMIN can't delete answers from APPROVED FAQs
 const deleteFAQAnswer = async (req, res) => {
     try {
         const { id } = req.params;
@@ -653,7 +664,7 @@ const deleteFAQAnswer = async (req, res) => {
     }
 };
 
-// Change FAQ Status (for SuperAdmin)
+// Modified changeFAQStatus function
 const changeFAQStatus = async (req, res) => {
     // Validate request
     const errors = validationResult(req);
@@ -693,10 +704,29 @@ const changeFAQStatus = async (req, res) => {
             });
         }
 
-        // Update status
+        // Prepare update data
+        const updateData = { status };
+
+        // Handle order based on status transition
+        if (status === 'APPROVED') {
+            // If transitioning to APPROVED, set the order to the max + 1
+            const maxOrderFaq = await prisma.faq.findFirst({
+                where: { status: 'APPROVED' },
+                orderBy: { order: 'desc' }
+            });
+            
+            updateData.order = maxOrderFaq ? maxOrderFaq.order + 1 : 0;
+        } 
+        else if (status === 'REJECTED' && existingFAQ.status === 'APPROVED') {
+            // If changing from APPROVED to REJECTED, reset the order
+            updateData.order = 0;
+        }
+        // In all other cases, keep order as is or default to 0
+
+        // Update status and potentially order
         const updatedFAQ = await prisma.faq.update({
             where: { id: parseInt(id) },
-            data: { status }
+            data: updateData
         });
 
         res.status(200).json({
@@ -748,7 +778,7 @@ const getPublicFAQs = async (req, res) => {
     }
 };
 
-// Update FAQ Order with complete validation
+// 3. Modified updateFAQOrder function to only allow SuperAdmin access and partial ordering of APPROVED FAQs
 const updateFAQOrder = async (req, res) => {
     // Validate request
     const errors = validationResult(req);
@@ -761,15 +791,15 @@ const updateFAQOrder = async (req, res) => {
     }
 
     try {
-        // Check permissions
+        // Check permissions - ONLY SuperAdmin can reorder FAQs
         const user = await prisma.user.findUnique({
             where: { id: req.userId },
         });
 
-        if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
+        if (user.role !== 'SUPERADMIN') {
             return res.status(403).json({
                 success: false,
-                message: "Access denied",
+                message: "Access denied. Only SuperAdmin can update FAQ order.",
             });
         }
 
@@ -782,35 +812,31 @@ const updateFAQOrder = async (req, res) => {
                 message: "orderedFaqs must be an array",
             });
         }
-
-        // Get all existing FAQs
-        const existingFaqs = await prisma.faq.findMany({
-            select: { id: true }
-        });
-        const existingFaqIds = existingFaqs.map(faq => faq.id);
         
         // Convert ordered FAQ IDs to integers for comparison
         const orderedFaqIds = orderedFaqs.map(item => parseInt(item.id));
         
-        // Check if all existing FAQs are included
-        const missingFaqIds = existingFaqIds.filter(id => !orderedFaqIds.includes(id));
-        if (missingFaqIds.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: `Missing FAQ IDs in your request: ${missingFaqIds.join(', ')}`,
-            });
-        }
+        // Check if any non-existent FAQ IDs or non-APPROVED FAQs are included
+        const existingApprovedFaqs = await prisma.faq.findMany({
+            where: { 
+                id: { in: orderedFaqIds },
+                status: 'APPROVED'
+            },
+            select: { id: true }
+        });
         
-        // Check if any non-existent FAQ IDs are included
-        const invalidFaqIds = orderedFaqIds.filter(id => !existingFaqIds.includes(id));
+        const existingApprovedIds = existingApprovedFaqs.map(faq => faq.id);
+        
+        // Check if any non-existent FAQ IDs or non-APPROVED FAQs are included
+        const invalidFaqIds = orderedFaqIds.filter(id => !existingApprovedIds.includes(id));
         if (invalidFaqIds.length > 0) {
             return res.status(400).json({
                 success: false,
-                message: `Invalid FAQ IDs in your request: ${invalidFaqIds.join(', ')}`,
+                message: `Invalid or non-APPROVED FAQ IDs in your request: ${invalidFaqIds.join(', ')}`,
             });
         }
 
-        // Update order for each FAQ
+        // Update order for each FAQ in the request
         for (let i = 0; i < orderedFaqs.length; i++) {
             const faqId = parseInt(orderedFaqs[i].id);
             await prisma.faq.update({
@@ -832,7 +858,7 @@ const updateFAQOrder = async (req, res) => {
     }
 };
 
-// Update FAQ Answer Order with complete validation
+// 4. Modified updateFAQAnswerOrder function to prevent ADMIN from updating APPROVED FAQs
 const updateFAQAnswerOrder = async (req, res) => {
     // Validate request
     const errors = validationResult(req);
@@ -873,19 +899,26 @@ const updateFAQAnswerOrder = async (req, res) => {
             });
         }
 
-        // SuperAdmin can edit any FAQ
-        if (user.role === 'SUPERADMIN') {
-            // Allow editing - no restrictions
+        // ADMIN users cannot update answer order for APPROVED FAQs
+        if (user.role === 'ADMIN' && existingFAQ.status === 'APPROVED') {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. Admin users cannot edit answer order of an approved FAQ.",
+            });
         }
-        // Admin has restrictions
-        else if (user.role === 'ADMIN') {
-            // Admins cannot edit APPROVED FAQs
-            if (existingFAQ.status === 'APPROVED') {
-                return res.status(403).json({
-                    success: false,
-                    message: "Access denied. Cannot edit answer order of an approved FAQ.",
-                });
-            }
+
+        let statusChangeMessage = "";
+        
+        // Only update status for ADMIN users and non-APPROVED FAQs
+        if (user.role === 'ADMIN' && existingFAQ.status === 'REJECTED') {
+            await prisma.faq.update({
+                where: { id: parseInt(faqId) },
+                data: { 
+                    status: 'PENDING',
+                    order: 0 // Reset order to 0 
+                }
+            });
+            statusChangeMessage = " and FAQ status changed to PENDING";
         }
 
         // Validate that orderedAnswers is an array
@@ -931,7 +964,7 @@ const updateFAQAnswerOrder = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: "FAQ answer order updated successfully"
+            message: `FAQ answer order updated successfully${statusChangeMessage}`
         });
     } catch (error) {
         res.status(500).json({

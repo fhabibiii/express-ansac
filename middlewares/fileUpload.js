@@ -10,6 +10,12 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// Create services directory if it doesn't exist
+const servicesDir = path.join(__dirname, '../public/uploads/services');
+if (!fs.existsSync(servicesDir)) {
+    fs.mkdirSync(servicesDir, { recursive: true });
+}
+
 // Set proper permissions for Linux/Unix systems
 if (fs.existsSync(uploadsDir) && process.platform !== 'win32') {
     try {
@@ -71,10 +77,15 @@ fs.readdir(tempDir, (err, files) => {
     }
 });
 
-// Configure storage for the original upload
+// Update the storage configuration:
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, tempDir);
+        // Check URL path to determine the correct destination
+        if (req.originalUrl.includes('/service/upload-image')) {
+            cb(null, servicesDir);
+        } else {
+            cb(null, tempDir);
+        }
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -170,7 +181,7 @@ if (process.platform === 'win32') {
     }, 5 * 60 * 1000); // Check every 5 minutes
 }
 
-// Middleware that processes the uploaded image with Sharp
+// Update the processImage middleware
 const processImage = async (req, res, next) => {
     if (!req.file) {
         return next();
@@ -183,10 +194,16 @@ const processImage = async (req, res, next) => {
         // Check if the file is a JPG/JPEG
         const isJpegFile = /\.(jpg|jpeg)$/i.test(originalFilePath);
         
+        // Determine the output directory based on the request path
+        let outputDir = uploadsDir;
+        if (req.originalUrl.includes('/service/upload-image')) {
+            outputDir = servicesDir;
+        }
+        
         // Generate a unique output filename
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const outputFilename = `image-${uniqueSuffix}.webp`;
-        const outputPath = path.join(uploadsDir, outputFilename);
+        const outputPath = path.join(outputDir, outputFilename);
 
         // Process the image with sharp
         await sharp(originalFilePath, { failOnError: false })
@@ -282,33 +299,12 @@ if (process.platform !== 'win32') {
     }, 30 * 60 * 1000); // Every 30 minutes
 }
 
-// Add this to clean up on server shutdown
+// Replace the existing process.on('SIGINT') handler
 process.on('SIGINT', function() {
     console.log('Server shutting down, performing final cleanup...');
     
-    try {
-        // Aggressive cleanup of temp directory
-        if (fs.existsSync(tempDir)) {
-            const files = fs.readdirSync(tempDir);
-            
-            for (const file of files) {
-                try {
-                    const filePath = path.join(tempDir, file);
-                    fs.unlinkSync(filePath);
-                    console.log(`Shutdown cleanup: deleted ${filePath}`);
-                } catch (err) {
-                    console.log(`Shutdown cleanup: could not delete ${file}: ${err.message}`);
-                }
-            }
-        }
-    } catch (err) {
-        console.error("Error during shutdown cleanup:", err);
-    }
-    
-    // Wait briefly to allow cleanup to finish
-    setTimeout(() => {
-        process.exit(0);
-    }, 500);
+    // Immediate shutdown - don't wait for file operations
+    process.exit(0);
 });
 
 module.exports = upload;

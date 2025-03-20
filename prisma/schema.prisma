@@ -189,3 +189,17 @@ model FaqAnswer {
 
   @@index([faqId])
 }
+
+// Service model for listing organization services
+model Service {
+  id          Int        @id @default(autoincrement())
+  title       String     @db.VarChar(255)
+  shortDesc   String     @db.Text  // Added field for short description
+  imageUrl    String     @db.Text
+  content     String     @db.LongText
+  status      BlogStatus @default(PENDING)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([status])
+}

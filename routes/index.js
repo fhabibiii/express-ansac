@@ -58,6 +58,10 @@ const faqValidators = require('../utils/validators/faq');
 // Import FAQ controller
 const faqController = require('../controllers/FAQController');
 
+// Add to your routes/index.js file
+const serviceController = require('../controllers/ServiceController');
+const serviceValidators = require('../utils/validators/service');
+
 // LOGIN & REGISTER
 
 //define route for register
@@ -227,6 +231,25 @@ router.delete('/faq/answer/:id', verifyToken, faqValidators.validateFAQAnswerId,
 router.put('/faq/:id/status', verifyToken, faqValidators.validateChangeFAQStatus, faqController.changeFAQStatus);
 router.put('/faq-order', verifyToken, faqValidators.validateUpdateFAQOrder, faqController.updateFAQOrder); // Changed route to avoid conflicts
 router.put('/faq/answer/order/:faqId', verifyToken, faqValidators.validateUpdateFAQAnswerOrder, faqController.updateFAQAnswerOrder);
+
+// SERVICE ROUTES
+// Image upload route
+router.post(
+    '/service/upload-image', 
+    verifyToken, 
+    upload.single('image'), // Using the same upload middleware
+    serviceController.uploadImage
+);
+
+// Service CRUD operations
+router.post('/service', verifyToken, serviceValidators.validateCreateService, serviceController.createService);
+router.get('/service/admin', verifyToken, serviceController.getAllServices);
+router.get('/service/pending', verifyToken, serviceController.getAllPendingAndRejectServices);
+router.get('/service-public', serviceController.getPublicServices); // Public endpoint without auth
+router.get('/service/:id', verifyToken, serviceValidators.validateServiceId, serviceController.getServiceById);
+router.put('/service/:id', verifyToken, serviceValidators.validateUpdateService, serviceController.updateService);
+router.delete('/service/:id', verifyToken, serviceValidators.validateServiceId, serviceController.deleteService);
+router.put('/service/:id/status', verifyToken, serviceValidators.validateChangeServiceStatus, serviceController.changeServiceStatus);
 
 //export router
 module.exports = router
