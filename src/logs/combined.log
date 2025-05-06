@@ -3387,3 +3387,13 @@
 {"level":"info","message":"Redis client connected","service":"ansac-api","timestamp":"2025-05-06 23:59:16"}
 {"level":"info","message":"Redis client ready","service":"ansac-api","timestamp":"2025-05-06 23:59:16"}
 {"level":"info","message":"Redis caching enabled for public endpoints","service":"ansac-api","timestamp":"2025-05-06 23:59:17"}
+{"component":"Security","level":"info","message":"Development mode: Blacklist is disabled","service":"ansac-api","timestamp":"2025-05-06 23:59:53"}
+{"level":"info","message":"Circuit breaker \"database\" initialized with failureThreshold=3, resetTimeout=10000ms","service":"ansac-api","timestamp":"2025-05-06 23:59:53"}
+{"level":"info","message":"Telegram monitoring is configured and enabled","service":"ansac-api","timestamp":"2025-05-06 23:59:54"}
+{"level":"info","message":"Database backup scheduler initialized","service":"ansac-api","timestamp":"2025-05-06 23:59:54"}
+{"level":"info","message":"Periodic stats enabled (every 60 minutes)","service":"ansac-api","timestamp":"2025-05-06 23:59:54"}
+{"level":"info","message":"Started user activity monitoring (reports every 1 hours)","service":"ansac-api","timestamp":"2025-05-06 23:59:54"}
+{"level":"info","message":"Database connected successfully","service":"ansac-api","timestamp":"2025-05-06 23:59:54"}
+{"level":"info","message":"Redis client connected","service":"ansac-api","timestamp":"2025-05-06 23:59:54"}
+{"level":"info","message":"Redis client ready","service":"ansac-api","timestamp":"2025-05-06 23:59:54"}
+{"level":"info","message":"Redis caching enabled for public endpoints","service":"ansac-api","timestamp":"2025-05-06 23:59:55"}
