@@ -4,22 +4,39 @@
   "description": "The Express backend for Ansac's psychological test website is designed to provide APIs to support the application's frontend functionality.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
   },
   "author": "FHDev",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.2.1",
+    "apicache": "^1.6.3",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
+    "compression": "^1.8.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
     "express": "^4.21.2",
+    "express-openapi-validator": "^5.4.9",
+    "express-rate-limit": "^7.5.0",
     "express-validator": "^7.2.1",
+    "express-xss-sanitizer": "^2.0.0",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
-    "sharp": "^0.33.5"
+    "node-cron": "^3.0.3",
+    "node-telegram-bot-api": "^0.66.0",
+    "nodemailer": "^6.10.1",
+    "redis": "^5.0.0",
+    "sharp": "^0.33.5",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
+    "nodemon": "^3.1.10",
     "prisma": "^6.2.1"
   }
 }

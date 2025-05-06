@@ -1,0 +1,491 @@
+{
+  "info": {
+    "_postman_id": "7e8f06e4-1c3b-4f52-8c71-12d8a68e9d02",
+    "name": "ANSAC-API-Auth",
+    "description": "Collection for the ANSAC psychological testing platform API authentication with refresh token support",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "Authentication endpoints for login, registration and token refresh",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"name\": \"Test User\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"password123\",\n  \"phoneNumber\": \"1234567890\",\n  \"dateOfBirth\": \"2000-01-01\",\n  \"role\": \"USER_SELF\",\n  \"address\": \"123 Test Street, Test City, 12345\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new user with username, name, email, password, phone number, date of birth, role, and address"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login to get access token and refresh token"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh-token"]
+            },
+            "description": "Get a new access token using refresh token without logging in again"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "description": "User profile management endpoints",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "{{userId}}"]
+            },
+            "description": "Get user's own profile information using UUID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"phoneNumber\": \"9876543210\",\n  \"dateOfBirth\": \"1995-05-05\",\n  \"address\": \"456 New Street, Updated City, 54321\",\n  \"username\": \"updated_username\",\n  \"email\": \"updated@example.com\",\n  \"role\": \"USER_PARENT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "{{userId}}"]
+            },
+            "description": "Update user's own profile information including username, email, and role. Username and email will be checked for uniqueness. Role can only be USER_SELF or USER_PARENT."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "{{userId}}"]
+            },
+            "description": "Delete user's own account using UUID"
+          },
+          "response": []
+        },
+        {
+          "name": "Check Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/check-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "check-password"]
+            },
+            "description": "Verify if the provided password is correct (ID is now extracted from the token)"
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"password123\",\n  \"newPassword\": \"newpassword123\",\n  \"confirmPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "change-password"]
+            },
+            "description": "Change user's password (ID is now extracted from the token)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Blog",
+      "description": "Blog management endpoints",
+      "item": [
+        {
+          "name": "Get Public Blogs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/blog/public",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog", "public"]
+            },
+            "description": "Get all publicly available blogs without authentication"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Blog",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Test Blog Post\",\n  \"content\": \"This is a test blog post content\",\n  \"coverImage\": \"https://example.com/image.jpg\",\n  \"status\": \"DRAFT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/blog",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog"]
+            },
+            "description": "Create a new blog post"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Blogs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/blog",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog"]
+            },
+            "description": "Get all blogs (Admin and SuperAdmin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Pending Blogs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/blog/pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog", "pending"]
+            },
+            "description": "Get all pending blogs (SuperAdmin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Blogs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/blog/my-blogs",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog", "my-blogs"]
+            },
+            "description": "Get all blogs created by the currently logged in user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Blog By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/blog/{{blogId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog", "{{blogId}}"]
+            },
+            "description": "Get a specific blog by its UUID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Blog",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Blog Post\",\n  \"content\": \"This is an updated blog post content\",\n  \"coverImage\": \"https://example.com/updated-image.jpg\",\n  \"status\": \"PUBLISHED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/blog/{{blogId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog", "{{blogId}}"]
+            },
+            "description": "Update an existing blog post by its UUID"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Blog",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/blog/{{blogId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog", "{{blogId}}"]
+            },
+            "description": "Delete a blog post by its UUID"
+          },
+          "response": []
+        },
+        {
+          "name": "Change Blog Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PUBLISHED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/blog/{{blogId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog", "{{blogId}}", "status"]
+            },
+            "description": "Change the status of a blog post (SuperAdmin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Blog Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/blog/upload-image",
+              "host": ["{{baseUrl}}"],
+              "path": ["blog", "upload-image"]
+            },
+            "description": "Upload an image for a blog post"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Automatically capture the auth tokens from login response",
+          "if (pm.info.requestName === \"Login\" && pm.response.code === 200) {",
+          "    const responseJson = pm.response.json();",
+          "    if (responseJson.data) {",
+          "        if (responseJson.data.accessToken) {",
+          "            pm.environment.set(\"accessToken\", responseJson.data.accessToken);",
+          "        }",
+          "        if (responseJson.data.refreshToken) {",
+          "            pm.environment.set(\"refreshToken\", responseJson.data.refreshToken);",
+          "        }",
+          "        // Extract and save the user ID (now a UUID)",
+          "        if (responseJson.data.user && responseJson.data.user.id) {",
+          "            pm.environment.set(\"userId\", responseJson.data.user.id);",
+          "        }",
+          "    }",
+          "}",
+          "",
+          "// Update access token when refresh token is used",
+          "if (pm.info.requestName === \"Refresh Token\" && pm.response.code === 200) {",
+          "    const responseJson = pm.response.json();",
+          "    if (responseJson.data && responseJson.data.accessToken) {",
+          "        pm.environment.set(\"accessToken\", responseJson.data.accessToken);",
+          "    }",
+          "}",
+          "",
+          "// Capture blog ID from blog creation or retrieval",
+          "if ((pm.info.requestName === \"Create Blog\" || pm.info.requestName === \"Get Blog By ID\") && pm.response.code === 200) {",
+          "    const responseJson = pm.response.json();",
+          "    if (responseJson.data && responseJson.data.id) {",
+          "        pm.environment.set(\"blogId\", responseJson.data.id);",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    }
+  ]
+}

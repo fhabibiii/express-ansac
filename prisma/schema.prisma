@@ -3,203 +3,242 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "foreignKeys"
 }
 
-// Enum untuk role user
-enum Role {
+model blog {
+  id        Int         @id @default(autoincrement())
+  title     String      @db.VarChar(255)
+  imageUrl  String      @db.Text
+  content   String      @db.LongText
+  createdBy Int
+  status    blog_status @default(PENDING)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime
+  uuid      String      @unique(map: "Blog_uuid_key") @default(dbgenerated("(uuid())"))
+  user      user        @relation(fields: [createdBy], references: [id], map: "Blog_createdBy_fkey")
+
+  @@index([createdBy], map: "Blog_createdBy_fkey")
+}
+
+model faq {
+  id        Int         @id @default(autoincrement())
+  question  String      @db.Text
+  status    faq_status  @default(PENDING)
+  order     Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime
+  uuid      String      @unique(map: "Faq_uuid_key") @default(dbgenerated("(uuid())"))
+  faqanswer faqanswer[]
+
+  @@index([status], map: "Faq_status_idx")
+}
+
+model faqanswer {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.Text
+  faqId     Int
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  uuid      String   @unique(map: "FaqAnswer_uuid_key") @default(dbgenerated("(uuid())"))
+  faq       faq      @relation(fields: [faqId], references: [id], onDelete: Cascade, map: "FaqAnswer_faqId_fkey")
+
+  @@index([faqId], map: "FaqAnswer_faqId_idx")
+}
+
+model gallery {
+  id           Int            @id @default(autoincrement())
+  title        String         @db.VarChar(255)
+  createdBy    Int
+  status       gallery_status @default(PENDING)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  uuid         String         @unique(map: "Gallery_uuid_key") @default(dbgenerated("(uuid())"))
+  user         user           @relation(fields: [createdBy], references: [id], map: "Gallery_createdBy_fkey")
+  galleryimage galleryimage[]
+
+  @@index([createdBy], map: "Gallery_createdBy_fkey")
+}
+
+model galleryimage {
+  id          Int      @id @default(autoincrement())
+  imageUrl    String   @db.Text
+  galleryId   Int
+  isThumbnail Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  uuid        String   @unique(map: "GalleryImage_uuid_key") @default(dbgenerated("(uuid())"))
+  gallery     gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade, map: "GalleryImage_galleryId_fkey")
+
+  @@index([galleryId], map: "GalleryImage_galleryId_idx")
+}
+
+model question {
+  id            Int             @id @default(autoincrement())
+  text          String          @db.Text
+  option1Label  String          @default("Tidak Benar") @db.VarChar(255)
+  option1Value  Int
+  option2Label  String          @default("Agak Benar") @db.VarChar(255)
+  option2Value  Int
+  option3Label  String          @default("Benar") @db.VarChar(255)
+  option3Value  Int
+  subskalaId    Int
+  uuid          String          @unique(map: "Question_uuid_key") @default(dbgenerated("(uuid())"))
+  subskala      subskala        @relation(fields: [subskalaId], references: [id], map: "Question_subskalaId_fkey")
+  questionorder questionorder[]
+
+  @@index([subskalaId], map: "Question_subskalaId_fkey")
+}
+
+model questionorder {
+  id         Int      @id @default(autoincrement())
+  testId     Int
+  questionId Int
+  order      Int
+  uuid       String   @unique(map: "QuestionOrder_uuid_key") @default(dbgenerated("(uuid())"))
+  question   question @relation(fields: [questionId], references: [id], map: "QuestionOrder_questionId_fkey")
+  test       test     @relation(fields: [testId], references: [id], map: "QuestionOrder_testId_fkey")
+
+  @@index([questionId], map: "QuestionOrder_questionId_fkey")
+  @@index([testId], map: "QuestionOrder_testId_fkey")
+}
+
+model service {
+  id        Int            @id @default(autoincrement())
+  title     String         @db.VarChar(255)
+  imageUrl  String         @db.Text
+  content   String         @db.LongText
+  status    service_status @default(PENDING)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime
+  shortDesc String         @db.Text
+  uuid      String         @unique(map: "Service_uuid_key") @default(dbgenerated("(uuid())"))
+
+  @@index([status], map: "Service_status_idx")
+}
+
+model subskala {
+  id                 Int                  @id @default(autoincrement())
+  name               String               @db.VarChar(255)
+  testId             Int
+  label1             String               @default("Normal") @db.VarChar(255)
+  description1       String               @db.Text
+  minValue1          Int
+  maxValue1          Int
+  label2             String               @default("Borderline") @db.VarChar(255)
+  description2       String               @db.Text
+  minValue2          Int
+  maxValue2          Int
+  label3             String               @default("Abnormal") @db.VarChar(255)
+  description3       String               @db.Text
+  minValue3          Int
+  maxValue3          Int
+  uuid               String               @unique(map: "Subskala_uuid_key") @default(dbgenerated("(uuid())"))
+  question           question[]
+  test               test                 @relation(fields: [testId], references: [id], map: "Subskala_testId_fkey")
+  testresultsubskala testresultsubskala[]
+
+  @@index([testId], map: "Subskala_testId_fkey")
+}
+
+model test {
+  id            Int             @id @default(autoincrement())
+  title         String          @db.VarChar(255)
+  shortDesc     String          @db.Text
+  longDesc      String          @db.Text
+  minAge        Int
+  maxAge        Int
+  status        test_status     @default(PENDING)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  target        String          @db.VarChar(20)
+  uuid          String          @unique(map: "Test_uuid_key") @default(dbgenerated("(uuid())"))
+  questionorder questionorder[]
+  subskala      subskala[]
+  testresult    testresult[]
+}
+
+model testresult {
+  id                 Int                  @id @default(autoincrement())
+  userId             Int
+  testId             Int
+  createdAt          DateTime             @default(now())
+  uuid               String               @unique(map: "TestResult_uuid_key") @default(dbgenerated("(uuid())"))
+  test               test                 @relation(fields: [testId], references: [id], map: "TestResult_testId_fkey")
+  user               user                 @relation(fields: [userId], references: [id], map: "TestResult_userId_fkey")
+  testresultsubskala testresultsubskala[]
+
+  @@index([testId], map: "TestResult_testId_fkey")
+  @@index([userId], map: "TestResult_userId_fkey")
+}
+
+model testresultsubskala {
+  id           Int        @id @default(autoincrement())
+  testResultId Int
+  subskalaId   Int
+  score        Int
+  uuid         String     @unique(map: "TestResultSubskala_uuid_key") @default(dbgenerated("(uuid())"))
+  subskala     subskala   @relation(fields: [subskalaId], references: [id], map: "TestResultSubskala_subskalaId_fkey")
+  testresult   testresult @relation(fields: [testResultId], references: [id], map: "TestResultSubskala_testResultId_fkey")
+
+  @@index([subskalaId], map: "TestResultSubskala_subskalaId_fkey")
+  @@index([testResultId], map: "TestResultSubskala_testResultId_fkey")
+}
+
+model user {
+  id          Int          @id @default(autoincrement())
+  name        String       @db.VarChar(255)
+  email       String       @unique(map: "User_email_key") @db.VarChar(255)
+  password    String       @db.VarChar(255)
+  dateOfBirth DateTime
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime
+  phoneNumber String       @unique(map: "User_phoneNumber_key") @db.VarChar(15)
+  username    String       @unique(map: "User_username_key") @db.VarChar(255)
+  role        user_role
+  uuid        String       @unique(map: "User_uuid_key") @default(dbgenerated("(uuid())"))
+  address     String       @default("No address provided") @db.Text
+  blog        blog[]
+  gallery     gallery[]
+  testresult  testresult[]
+}
+
+enum faq_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum gallery_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum service_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum blog_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum test_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum user_role {
   ADMIN
   SUPERADMIN
   USER_SELF
   USER_PARENT
-}
-
-// Enum untuk status test
-enum TestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-// Add this new enum for blog status
-enum BlogStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-model User {
-  id          Int       @id @default(autoincrement())
-  username    String    @unique @db.VarChar(255)
-  name        String    @db.VarChar(255)
-  email       String    @unique @db.VarChar(255)
-  password    String    @db.VarChar(255)
-  phoneNumber String    @unique @db.VarChar(15)
-  dateOfBirth DateTime
-  role        Role
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  testResults TestResult[]
-  blogs       Blog[]    // Add relation to blogs
-  galleries   Gallery[] // Add relation to galleries
-}
-
-// Add the Blog model
-model Blog {
-  id          Int        @id @default(autoincrement())
-  title       String     @db.VarChar(255)
-  imageUrl    String     @db.Text
-  content     String     @db.LongText
-  createdBy   Int
-  author      User       @relation(fields: [createdBy], references: [id])
-  status      BlogStatus @default(PENDING)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-}
-
-// Gallery model - similar to Blog but without content field
-model Gallery {
-  id          Int            @id @default(autoincrement())
-  title       String         @db.VarChar(255)
-  createdBy   Int
-  author      User           @relation(fields: [createdBy], references: [id])
-  status      BlogStatus     @default(PENDING) // Reusing BlogStatus enum
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  images      GalleryImage[]
-}
-
-// GalleryImage model - to store multiple images for each gallery
-model GalleryImage {
-  id          Int      @id @default(autoincrement())
-  imageUrl    String   @db.Text
-  galleryId   Int
-  gallery     Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
-  isThumbnail Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([galleryId])
-}
-
-model Test {
-  id          Int       @id @default(autoincrement())
-  title       String    @db.VarChar(255)
-  shortDesc   String    @db.Text
-  longDesc    String    @db.Text
-  minAge      Int
-  maxAge      Int
-  target      String    @db.VarChar(20)    
-  status      TestStatus @default(PENDING)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  subskala    Subskala[]
-  testResults TestResult[]
-  questionOrders QuestionOrder[]
-}
-
-// Model Subskala
-model Subskala {
-  id            Int        @id @default(autoincrement())
-  name          String     @db.VarChar(255)
-  testId        Int
-  test          Test       @relation(fields: [testId], references: [id])
-  label1        String     @db.VarChar(255) @default("Normal")
-  description1  String     @db.Text
-  minValue1     Int
-  maxValue1     Int
-  label2        String     @db.VarChar(255) @default("Borderline")
-  description2  String     @db.Text
-  minValue2     Int
-  maxValue2     Int
-  label3        String     @db.VarChar(255) @default("Abnormal")
-  description3  String     @db.Text
-  minValue3     Int
-  maxValue3     Int
-  questions     Question[]
-  testResultSubskala TestResultSubskala[]
-}
-
-// Model Question
-model Question {
-  id            Int        @id @default(autoincrement())
-  text          String     @db.Text
-  subskalaId    Int
-  subskala      Subskala   @relation(fields: [subskalaId], references: [id])
-  option1Label  String     @db.VarChar(255) @default("Tidak Benar")
-  option1Value  Int        
-  option2Label  String     @db.VarChar(255) @default("Agak Benar")
-  option2Value  Int        
-  option3Label  String     @db.VarChar(255) @default("Benar")
-  option3Value  Int        
-  questionOrders QuestionOrder[]
-}
-
-model TestResult {
-  id           Int       @id @default(autoincrement())
-  userId       Int
-  testId       Int
-  createdAt    DateTime  @default(now())
-  user         User      @relation(fields: [userId], references: [id])
-  test         Test      @relation(fields: [testId], references: [id])
-  subskalaResults TestResultSubskala[]
-}
-
-model TestResultSubskala {
-  id            Int      @id @default(autoincrement())
-  testResultId  Int
-  subskalaId    Int
-  score         Int
-  testResult    TestResult @relation(fields: [testResultId], references: [id])
-  subskala      Subskala   @relation(fields: [subskalaId], references: [id])
-}
-
-// Model QuestionOrder
-model QuestionOrder {
-  id          Int      @id @default(autoincrement())
-  testId      Int
-  questionId  Int
-  order       Int
-  test        Test     @relation(fields: [testId], references: [id])
-  question    Question @relation(fields: [questionId], references: [id])
-}
-
-// FAQ model for accordion-style frequently asked questions
-model Faq {
-  id          Int        @id @default(autoincrement())
-  question    String     @db.Text
-  status      BlogStatus @default(PENDING)
-  order       Int        @default(0)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  answers     FaqAnswer[]
-
-  @@index([status])
-}
-
-model FaqAnswer {
-  id          Int      @id @default(autoincrement())
-  content     String   @db.Text
-  faqId       Int
-  faq         Faq      @relation(fields: [faqId], references: [id], onDelete: Cascade)
-  order       Int      @default(0)  // To control answer display order
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([faqId])
-}
-
-// Service model for listing organization services
-model Service {
-  id          Int        @id @default(autoincrement())
-  title       String     @db.VarChar(255)
-  shortDesc   String     @db.Text  // Added field for short description
-  imageUrl    String     @db.Text
-  content     String     @db.LongText
-  status      BlogStatus @default(PENDING)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  @@index([status])
 }
